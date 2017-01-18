@@ -16,7 +16,6 @@ class App extends Component {
     this.state = {
       hexagons: [],
       layout: {},
-      currentUser: Meteor.user(),
     };
   }
 
@@ -90,27 +89,33 @@ class App extends Component {
     this.setState({ hexagons, layout });
   }
 
+  /*
+   */
+
   render() {
-    let { hexagons, layout, user } = this.state;
+    let { hexagons, layout } = this.state;
+    
     return (
         <div className="App">
           <h2>Forest Friends!</h2>
           <p>Welcome to Forest Friends! Use your animals and animal friends wisely to outsmart your opponent!</p>
             <AccountsUIWrapper />
-          <HexGrid width={1200} height={800} hexagons={hexagons} layout={layout} />
+          { this.props.userId ? <HexGrid width={1200} height={800} hexagons={hexagons} layout={layout} /> : null }
         </div>
     );
   }
 }
 
 App.propTypes = {
+  userId: PropTypes.number,
   currentUser: PropTypes.object,
 };
 
-export default createContainer(() => {
+export default AppContainer = createContainer(() => {
   Meteor.subscribe('forestfriends');
 
   return {
     currentUser: Meteor.user(),
+    userId: Meteor.userId(),
   };
 }, App);
