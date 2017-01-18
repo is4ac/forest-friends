@@ -15,7 +15,8 @@ class App extends Component {
 
     this.state = {
       hexagons: [],
-      layout: {}
+      layout: {},
+      currentUser: Meteor.user(),
     };
   }
 
@@ -90,13 +91,12 @@ class App extends Component {
   }
 
   render() {
-    let { hexagons, layout } = this.state;
+    let { hexagons, layout, user } = this.state;
     return (
         <div className="App">
-          <center>
           <h2>Forest Friends!</h2>
           <p>Welcome to Forest Friends! Use your animals and animal friends wisely to outsmart your opponent!</p>
-          </center>
+            <AccountsUIWrapper />
           <HexGrid width={1200} height={800} hexagons={hexagons} layout={layout} />
         </div>
     );

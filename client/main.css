@@ -11,6 +11,10 @@ body {
   background: #f0f0f0;
 }
 
+.App {
+  padding-left: 2em;
+}
+
 [draggable] {
   -moz-user-select: none;
   -khtml-user-select: none;
