@@ -3,10 +3,11 @@ import ReactDOM from 'react-dom';
 import { HexGrid, Layout, Hex } from 'react-hexgrid';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
-
-// import { Tasks } from '../api/forestfriends.js';
-
-import AccountsUIWrapper from './AccountsUIWrapper.jsx';
+import Lobby from './Lobby.jsx';
+// import { Games } from '../api/games.js';
+import * as actions from '../api/actions.js';
+//import AccountsUIWrapper from './AccountsUIWrapper.jsx';
+// import { Games } from '../../lib/games.js';
 
 // App component - represents the whole app
 class App extends Component {
@@ -61,7 +62,7 @@ class App extends Component {
    */
   componentWillMount() {
     let hexagons = this.generateHexagons(7, 6);
-    const layout = new Layout({ width: 6, height: 6, flat: true, spacing: 1 }, { x: -65, y: -40 });
+    let layout = new Layout({ width: 6, height: 6, flat: true, spacing: 1 }, { x: -65, y: -40 });
 
     // map tiles are numbered from left to right, top to bottom in this array
 
@@ -86,10 +87,28 @@ class App extends Component {
     this.setHexagon(hexagons, 4, 34, 'skunk', 3);
     this.setHexagon(hexagons, 4, 33, 'cat', 3);
 
+
+    st = {
+      actions: actions,
+      hexagons: hexagons,
+      layout: layout,
+    };
+
+
+    if (Debugging.find().count() == 0) {
+      console.log('calling games.insert');
+      Meteor.call('games.insert', st);
+      Meteor.call('debugging');
+    }
+
     this.setState({ hexagons, layout });
   }
 
   /*
+   <AccountsUIWrapper />
+   { this.props.userId ? <Lobby /> : null }
+
+
    */
 
   render() {
@@ -99,22 +118,25 @@ class App extends Component {
         <div className="App">
           <h2>Forest Friends!</h2>
           <p>Welcome to Forest Friends! Use your animals and animal friends wisely to outsmart your opponent!</p>
-            <AccountsUIWrapper />
-          { this.props.userId ? <HexGrid width={1200} height={800} hexagons={hexagons} layout={layout} /> : null }
+          <Lobby/>
         </div>
     );
   }
 }
 
 App.propTypes = {
-  userId: PropTypes.number,
+  userId: PropTypes.string,
   currentUser: PropTypes.object,
+  debugging: PropTypes.number,
 };
 
 export default AppContainer = createContainer(() => {
-  Meteor.subscribe('forestfriends');
+//  Meteor.subscribe('games');
+  console.log('App: Games count: ' + Games.find().count());
+  console.log('App: Debugging count: ' + Debugging.find().count());
 
   return {
+    debugging: Debugging.find().count(),
     currentUser: Meteor.user(),
     userId: Meteor.userId(),
   };

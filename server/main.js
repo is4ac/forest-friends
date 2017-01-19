@@ -1,1 +1,1 @@
-import '../imports/api/forestfriends.js';
+import '../lib/games.js';
