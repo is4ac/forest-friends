@@ -14,6 +14,7 @@ class GameListItem extends Component {
         };
 
         this.handleClick = this.handleClick.bind(this);
+        this.handleClickRejoin = this.handleClickRejoin.bind(this);
     }
 
     /**
@@ -21,8 +22,22 @@ class GameListItem extends Component {
      */
     handleClick(event) {
         event.preventDefault();
-        console.log(this.props.game.id);
 
+        // add new user to the game in database
+        Meteor.call('games.addPlayer', this.props.game.id, this.props.currentUser);
+
+        // go to game
+        params = {gameid: this.props.game.id};
+        FlowRouter.go('/games/:gameid', params);
+    }
+
+    /**
+     * Rejoin the game! No need to add any users this time
+     */
+    handleClickRejoin(event) {
+        event.preventDefault();
+
+        // go to game
         params = {gameid: this.props.game.id};
         FlowRouter.go('/games/:gameid', params);
     }
@@ -31,17 +46,25 @@ class GameListItem extends Component {
      * Actually render the thing!
      */
     render() {
-        actions = this.props.game.actions;
-        hexagons = this.props.game.hexagons;
-        layout = this.props.game.layout;
+        let owner = this.props.currentUser.username === this.props.game.player1.username ||
+                this.props.currentUser.username === this.props.game.player2.username;
 
         return (
             <li>
                 <div className="container">
                     <div className="row">
                         <div className="col-md-4">Game Name: {this.props.game.name}</div>
-                        <div className="col-md-4"><button type="button" className="btn btn-primary" onClick={this.handleClick}>Join Game</button></div>
-                        <div className="col-md-4">Current player(s): </div>
+                        <div className="col-md-4">
+                            {
+                                owner ?
+                                    <button type="button" className="btn btn-primary" onClick={this.handleClickRejoin}>Rejoin
+                                        Game</button> :
+                                    <button type="button" className="btn btn-primary" onClick={this.handleClick}>Join
+                                    Game</button>
+                            }
+                        </div>
+                        <div className="col-md-4">Current player(s): {this.props.game.player1.username} :
+                            {this.props.game.player2 ? ' '+this.props.game.player2.username : ' [Waiting for player]'}</div>
                     </div>
                 </div>
             </li>
@@ -60,14 +83,11 @@ GameListItem.propTypes = {
     visible: PropTypes.bool.isRequired,
 };
 
-/*
+
 export default createContainer(() => {
     Meteor.subscribe('games');
 
     return {
-        games: Games.find({}, { sort: { createdAt: -1 }}).fetch(),
+        currentUser: Meteor.user(),
     }
-});
-*/
-
-export { GameListItem };
+}, GameListItem);

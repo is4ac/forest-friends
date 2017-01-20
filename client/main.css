@@ -11,6 +11,10 @@ body {
   background: #f0f0f0;
 }
 
+div[class*="col-"] {
+  margin-top: 2%;
+}
+
 .App {
   padding-left: 2em;
 }
@@ -26,7 +30,18 @@ body {
   user-drag: element;
 }
 
-@keyframes spin { 100% { transform: rotate(360deg); } }
+ul {
+  margin: 0;
+  padding: 0;
+  background: white;
+}
+
+li {
+  position: relative;
+  list-style: none;
+  padding: 15px;
+  border-bottom: #eee solid 1px;
+}
 
 svg {
 
