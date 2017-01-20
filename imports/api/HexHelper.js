@@ -16,7 +16,7 @@ class HexHelper {
     }
 
     convertHexGridToArrayIndex(hex) {
-        return this.config.mapHeight * hex.q + hex.r + (hex.q/2);
+        return this.config.mapHeight * hex.q + hex.r + Math.floor(hex.q/2);
     }
 
     /**

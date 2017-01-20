@@ -26,6 +26,8 @@ class Game extends Component {
         this.isHexEqual = this.isHexEqual.bind(this);
         this.highlightHex = this.highlightHex.bind(this);
 
+        this.hexHelper = new HexHelper();
+
         this.state = {
             config: boardConfig,
             hexagons: [],
@@ -33,6 +35,7 @@ class Game extends Component {
             actions: { onMouseEnter: this.onMouseEnter,
                         onMouseLeave: this.onMouseLeave,
                         onClick: this.onClick, },
+            selectedHexIndex: -1,
         };
     }
 
@@ -96,22 +99,29 @@ class Game extends Component {
     onClick(hex, event) {
         event.preventDefault();
 
-        // Get the current game
-        let idParam = FlowRouter.getParam('gameid');
-        idParam = parseInt(idParam);
-        let game = Games.findOne({id: idParam});
+        console.log(this.props.game.selectedHexIndex);
 
-        game.hexagons.forEach(function (thisHex) {
-            // highlight the hex if it's equal
-            if (this.isHexEqual(hex, thisHex)) {
-                this.highlightHex(thisHex);
-            }
-        }, this);
+        // Get the current game
+        let hexIndex = this.hexHelper.convertHexGridToArrayIndex(hex);
+        console.log(hexIndex);
+
+        // reset the highlighted index based on database (in case of reloading)
+        this.setState({selectedHexIndex: this.props.game.selectedHexIndex});
+
+        // deselect the currently highlighted hex
+        if (this.state.selectedHexIndex >= 0) {
+            this.highlightHex(this.props.game.hexagons[this.state.selectedHexIndex]);
+        }
+
+        // highlight the new hex and add it to the state
+        this.highlightHex(this.props.game.hexagons[hexIndex]);
+        this.setState({selectedHexIndex: hexIndex});
+        Meteor.call('games.setSelectedHexIndex', this.props.id, hexIndex);
 
         // debug
-        console.log('onClick', hex, event, game);
+        //console.log('onClick', hex, event, game);
 
-        Meteor.call('games.updateHexagons', this.props.id, game.hexagons);
+        Meteor.call('games.updateHexagons', this.props.id, this.props.game.hexagons);
     }
 
     /*********************************************************************
