@@ -25,6 +25,10 @@ class Game extends Component {
         this.onClick = this.onClick.bind(this);
         this.isHexEqual = this.isHexEqual.bind(this);
         this.highlightHex = this.highlightHex.bind(this);
+        this.unhighlightHex = this.unhighlightHex.bind(this);
+        this.toggleHighlightHex = this.toggleHighlightHex(this);
+        this.selectTile = this.selectTile.bind(this);
+        this.unhighlightAll = this.unhighlightAll(this);
 
         this.hexHelper = new HexHelper();
 
@@ -53,17 +57,46 @@ class Game extends Component {
         return hex1.q == hex2.q && hex1.r == hex2.r && hex1.s == hex2.s;
     }
 
+    highlightHex(hex) {
+        hex.props.image = hex.props.image.slice(0, -4) + '_highlight.png';
+    }
+
+    unhighlightHex(hex) {
+        hex.props.image = hex.props.image.slice(0,-14) + '.png';
+    }
+
     /**
      * Toggles the hexagon image from being highlighted or not
      * @param hex
      */
-    highlightHex(hex) {
+    toggleHighlightHex(hex) {
         let ending = hex.props.image.slice(-8);
 
         if (ending === 'ight.png') {
-            hex.props.image = hex.props.image.slice(0,-14) + '.png';
+            this.unhighlightHex(hex);
         } else {
-            hex.props.image = hex.props.image.slice(0, -4) + '_highlight.png';
+            this.highlightHex(hex);
+        }
+    }
+
+    /**
+     * unhighlight all
+     */
+    unhighlightAll() {
+        this.props.game.hexagons.forEach(function (hex) {
+            this.unhighlightHex(hex);
+        }, this);
+    }
+
+    /**
+     * Select a tile (de-highlights it if it's already selected, highlights it
+     * and unhighlights anything else if it's not already selected)
+     */
+    selectTile(index) {
+        if (index == this.state.selectedHexIndex) {
+            this.unhighlightAll();
+        } else {
+            
         }
     }
 
@@ -108,13 +141,8 @@ class Game extends Component {
         // reset the highlighted index based on database (in case of reloading)
         this.setState({selectedHexIndex: this.props.game.selectedHexIndex});
 
-        // deselect the currently highlighted hex
-        if (this.state.selectedHexIndex >= 0) {
-            this.highlightHex(this.props.game.hexagons[this.state.selectedHexIndex]);
-        }
+        this.selectTile(hexIndex);
 
-        // highlight the new hex and add it to the state
-        this.highlightHex(this.props.game.hexagons[hexIndex]);
         this.setState({selectedHexIndex: hexIndex});
         Meteor.call('games.setSelectedHexIndex', this.props.id, hexIndex);
 
