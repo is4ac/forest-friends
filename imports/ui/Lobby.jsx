@@ -2,12 +2,9 @@
  * Created by isung on 1/18/17.
  */
 import React, { Component, PropTypes } from 'react';
-import ReactDOM from 'react-dom';
-import { HexGrid, Layout, Hex } from 'react-hexgrid';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
-import AccountsUIWrapper from './AccountsUIWrapper.jsx';
-// import { Games } from '../../lib/games.js';
+import { Games } from '../../lib/games.js';
 import { GameListItem } from './GameListItem.jsx';
 
 class Lobby extends Component {
@@ -17,6 +14,15 @@ class Lobby extends Component {
         this.state = {
 
         };
+    }
+
+    /**
+     * Create a new game button click handler
+     */
+    handleClick(event) {
+        event.preventDefault();
+
+        FlowRouter.go('/newgame');
     }
 
     /**
@@ -31,11 +37,13 @@ class Lobby extends Component {
             console.log('in renderGames');
             return filteredGames.map((game) => {
                 return (
-                    <GameListItem
-                        key={game.id}
-                        game={game}
-                        visible={true}
-                    />
+                    <div>
+                        <GameListItem
+                            key={game._id}
+                            game={game}
+                            visible={true}
+                        />
+                    </div>
                 );
             });
         }
@@ -47,6 +55,7 @@ class Lobby extends Component {
     render() {
         return (
                 <div>
+                    <button type="button" className="btn btn-primary" onClick={this.handleClick}>Create New Game</button>
                     <ul>
                         {this.renderGames()}
                     </ul>
@@ -55,22 +64,6 @@ class Lobby extends Component {
     }
 }
 
-/*
- <form class="form-signin">
- <h2 class="form-signin-heading">Please sign in</h2>
- <label for="inputEmail" class="sr-only">Email address</label>
- <input type="email" id="inputEmail" class="form-control" placeholder="Email address" required autofocus/>
- <label for="inputPassword" class="sr-only">Password</label>
- <input type="password" id="inputPassword" class="form-control" placeholder="Password" required/>
- <div class="checkbox">
- <label>
- <input type="checkbox" value="remember-me"/> Remember me
- </label>
- </div>
- <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
- </form>
- */
-
 Lobby.propTypes = {
     games: PropTypes.array,
 };
@@ -78,22 +71,13 @@ Lobby.propTypes = {
 export default createContainer(() => {
     console.log('Container contains: ' + Games.find({}).count());
 
-    return {
-        games: Games.find().fetch(),
-    };
-    /*
     if (Meteor.subscribe('games').ready()) {
-        console.log('Container contains: ' + Games.find({}).count());
-
         return {
-            currentUser: Meteor.user(),
-            games: Games.find({}, {sort: {createdAt: -1}}).fetch(),
+            games: Games.find({}).fetch(),
         };
     } else {
         return {
-            currentUser: Meteor.user(),
             games: null,
         };
     }
-    */
 }, Lobby);

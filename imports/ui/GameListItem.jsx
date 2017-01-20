@@ -2,8 +2,6 @@
  * Created by isung on 1/18/17.
  */
 import React, { Component, PropTypes } from 'react';
-import ReactDOM from 'react-dom';
-import { HexGrid, Layout, Hex } from 'react-hexgrid';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
 
@@ -14,6 +12,19 @@ class GameListItem extends Component {
         this.state = {
 
         };
+
+        this.handleClick = this.handleClick.bind(this);
+    }
+
+    /**
+     * Go to the game!
+     */
+    handleClick(event) {
+        event.preventDefault();
+        console.log(this.props.game.id);
+
+        params = {gameid: this.props.game.id};
+        FlowRouter.go('/games/:gameid', params);
     }
 
     /**
@@ -28,8 +39,8 @@ class GameListItem extends Component {
             <li>
                 <div className="container">
                     <div className="row">
-                        <div className="col-md-4">Game ID: {this.props.game.id}</div>
-                        <div className="col-md-4"><button type="button" className="btn btn-primary">Join Game</button></div>
+                        <div className="col-md-4">Game Name: {this.props.game.name}</div>
+                        <div className="col-md-4"><button type="button" className="btn btn-primary" onClick={this.handleClick}>Join Game</button></div>
                         <div className="col-md-4">Current player(s): </div>
                     </div>
                 </div>
