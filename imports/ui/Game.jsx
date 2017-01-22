@@ -31,6 +31,7 @@ class Game extends Component {
         this.handleClickDelete = this.handleClickDelete.bind(this);
         this.handleClickEndTurn = this.handleClickEndTurn.bind(this);
         this.getCurrentPlayerNumber = this.getCurrentPlayerNumber.bind(this);
+        this.unhighlightBothPlayers = this.unhighlightBothPlayers.bind(this);
 
         this.hexHelper = new HexHelper();
 
@@ -70,6 +71,18 @@ class Game extends Component {
      */
     unhighlightAll() {
         this.props.currentPlayer.state.hexagons.forEach(function (hex) {
+            let ending = hex.props.image.slice(-8);
+
+            if (ending === 'ight.png') {
+                this.unhighlightHex(hex);
+            }
+        }, this);
+    }
+
+    unhighlightBothPlayers() {
+        this.unhighlightAll();
+
+        this.props.otherPlayer.state.hexagons.forEach(function (hex) {
             let ending = hex.props.image.slice(-8);
 
             if (ending === 'ight.png') {
@@ -194,6 +207,13 @@ class Game extends Component {
             console.log('calling changeTurns');
             Meteor.call('games.changeTurns', this.props.id);
             this.props.message = "";
+
+            // reset the tile selections
+            let current = this.getCurrentPlayerNumber();
+            this.unhighlightBothPlayers();
+
+            Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
+            Meteor.call('games.updateHexagons', this.props.id, 1-current, this.props.otherPlayer.state.hexagons);
         } else {
             // otherwise, wait for them to finish!!
             console.log('wait!');
