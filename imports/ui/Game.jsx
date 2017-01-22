@@ -131,30 +131,29 @@ class Game extends Component {
     onClick(hex, event) {
         event.preventDefault();
 
-        // get the current hexIndex
-        let hexIndex = this.hexHelper.convertHexGridToArrayIndex(hex);
-    //    console.log('user: ' + this.props.currentUser.username + ', hex: ' + hexIndex);
-
-        // reset the highlighted index based on database (in case of reloading)
-        this.setState({selectedHexIndex: this.props.currentPlayer.state.selectedHexIndex});
-        this.selectTile(hexIndex);
-
-    //    console.log(this.props.currentPlayer);
-
-        // sets the player number based on the currentPlayer
         let playerNumber = this.getCurrentPlayerNumber();
-    //    console.log('player:' + playerNumber);
 
-        // player 1's tiles should change
-        if (hexIndex == this.props.currentPlayer.state.selectedHexIndex) {
-            this.setState({selectedHexIndex: -1});
-            Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, -1);
-        } else {
-            this.setState({selectedHexIndex: hexIndex});
-            Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, hexIndex);
+        // only select the tile if it is owned by the player
+        if (this.hexHelper.isHexOwnedBy(hex, playerNumber)) {
+            // get the current hexIndex
+            let hexIndex = this.hexHelper.convertHexGridToArrayIndex(hex);
+            //    console.log('user: ' + this.props.currentUser.username + ', hex: ' + hexIndex);
+
+            // reset the highlighted index based on database (in case of reloading)
+            this.setState({selectedHexIndex: this.props.currentPlayer.state.selectedHexIndex});
+            this.selectTile(hexIndex);
+
+            // player 1's tiles should change
+            if (hexIndex == this.props.currentPlayer.state.selectedHexIndex) {
+                this.setState({selectedHexIndex: -1});
+                Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, -1);
+            } else {
+                this.setState({selectedHexIndex: hexIndex});
+                Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, hexIndex);
+            }
+
+            Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
         }
-
-        Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
     }
 
     /*********************************************************************

@@ -56,6 +56,16 @@ class HexHelper {
     }
 
     /**
+     * Returns whether or not the given hex is owned by the player number (0 or 1)
+     * @param hex
+     * @param player
+     */
+    isHexOwnedBy(hex, player) {
+        let number = (player + 1) + '';
+        return hex.props.image.indexOf(number) > -1;
+    }
+
+    /**
      * Initializing function for creating the game
      */
     initialize() {

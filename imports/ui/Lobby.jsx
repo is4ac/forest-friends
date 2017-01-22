@@ -34,13 +34,11 @@ class Lobby extends Component {
         if (filteredGames != null) {
             return filteredGames.map((game) => {
                 return (
-                    <div>
-                        <GameListItem
-                            key={game._id}
-                            game={game}
-                            visible={true}
-                        />
-                    </div>
+                    <GameListItem
+                        key={game.id+''}
+                        game={game}
+                        visible={true}
+                    />
                 );
             });
         }
