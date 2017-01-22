@@ -16,6 +16,7 @@ class Player {
             hexagons: hexagons, // hex board that this player will see
             cards: cards, // cards that this player owns
             selectedHexIndex: -1, // which tile is currently selected. -1 means no tile
+            finishedWithTurn: false, // keeps track of whether or not they've finished their turn
         };
     }
 }

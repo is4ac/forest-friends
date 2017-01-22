@@ -24,10 +24,8 @@ class Game extends Component {
         this.onMouseEnter = this.onMouseEnter.bind(this);
         this.onMouseLeave = this.onMouseLeave.bind(this);
         this.onClick = this.onClick.bind(this);
-    //    this.isHexEqual = this.isHexEqual.bind(this);
         this.highlightHex = this.highlightHex.bind(this);
         this.unhighlightHex = this.unhighlightHex.bind(this);
-   //     this.toggleHighlightHex = this.toggleHighlightHex.bind(this);
         this.selectTile = this.selectTile.bind(this);
         this.unhighlightAll = this.unhighlightAll.bind(this);
         this.handleClickDelete = this.handleClickDelete.bind(this);
@@ -51,41 +49,21 @@ class Game extends Component {
      * Game helper functions
      *********************************************************************/
 
-    /*
-     * checks to see if the two hexagons are equal
-     * @param hex1
-     * @param hex2
-     * @returns {boolean}
-
-    isHexEqual(hex1, hex2) {
-        return hex1.q == hex2.q && hex1.r == hex2.r && hex1.s == hex2.s;
-    }
-    */
-
+    /**
+     * Highlight a hex tile image
+     * @param hex
+     */
     highlightHex(hex) {
         hex.props.image = hex.props.image.slice(0, -4) + '_highlight.png';
     }
 
+    /**
+     * Unhighlight a hex tile image
+     * @param hex
+     */
     unhighlightHex(hex) {
         hex.props.image = hex.props.image.slice(0,-14) + '.png';
     }
-
-    /*
-     * Toggles the hexagon image from being highlighted or not
-     * @param hex
-
-    toggleHighlightHex(hex) {
-        console.log(hex);
-        console.log(hex.props.image);
-        let ending = hex.props.image.slice(-8);
-
-        if (ending === 'ight.png') {
-            this.unhighlightHex(hex);
-        } else {
-            this.highlightHex(hex);
-        }
-    }
-     */
 
     /**
      * unhighlight all
@@ -112,9 +90,13 @@ class Game extends Component {
         }
     }
 
+    /**
+     * Returns 0 if the currentPlayer is players[0], and 1 otherwise
+     * @returns {number}
+     */
     getCurrentPlayerNumber() {
-        return this.props.currentPlayer.state.user.username === this.props.game.player1.state.user.username
-            ? 1 : 2;
+        return this.props.currentPlayer.state.user.username === this.props.game.players[0].state.user.username
+            ? 0 : 1;
     }
 
     /*********************************************************************
@@ -172,7 +154,7 @@ class Game extends Component {
             Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, hexIndex);
         }
 
-        Meteor.call('games.updateHexagons', this.props.id, this.getCurrentPlayerNumber(), this.props.currentPlayer.state.hexagons);
+        Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
     }
 
     /*********************************************************************
@@ -208,7 +190,18 @@ class Game extends Component {
     handleClickEndTurn(event) {
         event.preventDefault();
 
-        // TODO
+        // end the turn if the opponent is finished with their turn
+        if (this.props.otherPlayer.state.finishedWithTurn) {
+            console.log('calling changeTurns');
+            Meteor.call('games.changeTurns', this.props.id);
+            this.props.message = "";
+        } else {
+            // otherwise, wait for them to finish!!
+            console.log('wait!');
+            this.props.buttonText = "Waiting...";
+            Meteor.call('games.setFinishedWithTurn', this.props.id, this.getCurrentPlayerNumber());
+            this.props.message = "Please wait for other player.";
+        }
     }
 
     /**
@@ -220,10 +213,11 @@ class Game extends Component {
         let layout = null;
         let yourTurn = null;
 
+
         // create the layout if the database is loaded, and check if it's the currentUser's turn
         if (game != null && this.props.currentUser != null) {
             layout = new Layout({width: 8, height: 8, flat: true, spacing: 1}, {x: -42, y: -40});
-            yourTurn = this.props.currentUser.username === this.props.game.currentTurn.username;
+            yourTurn = this.props.currentUser.username === this.props.game.currentTurn.state.user.username;
         }
 
         return (
@@ -232,8 +226,15 @@ class Game extends Component {
                     <div>
                         <div className="row">
                             <div className="col-md-6">
+                                <h4>
                                 {this.props.otherPlayer.state.user ? 'You are playing against ' + this.props.otherPlayer.state.user.username + '.'
                                     : 'You are currently waiting for another player to play! Please be patient.'}
+                                </h4>
+                            </div>
+                            <div className="col-md-6">
+                                <div className="message">
+                                {this.props.message}
+                                </div>
                             </div>
                         </div>
                         <div className="row">
@@ -249,8 +250,8 @@ class Game extends Component {
                         </div>
                         <div className="row">
                             <div className="col-sm-4">
-                                <button type="button" className="btn btn-lg btn-success" onClick={this.handleClickEndTurn}>End
-                                    Turn
+                                <button type="button" className="btn btn-lg btn-success" onClick={this.handleClickEndTurn}>
+                                    {this.props.buttonText}
                                 </button>
                             </div>
                             <div className="col-sm-4">
@@ -280,6 +281,8 @@ Game.propTypes = {
     currentUser: PropTypes.object, // the current Meteor.user() object
     currentPlayer: PropTypes.object, // the current user's Player object
     otherPlayer: PropTypes.object, // the opponent Player object
+    buttonText: PropTypes.string, // the string for the End Turn button
+    message: PropTypes.string, // message that goes on the top of the screen
 };
 
 export default createContainer(() => {
@@ -291,14 +294,24 @@ export default createContainer(() => {
         let game = Games.findOne({id: idParam});
         let currentPlayer = null;
         let otherPlayer = null;
+        let buttonText = "End Turn";
+        let message = "";
 
+        // figures out which player is the current player
         if (game != null) {
-            if (game.player1.state.user.username === user.username) {
-                currentPlayer = game.player1;
-                otherPlayer = game.player2;
+            if (game.players[0].state.user.username === user.username) {
+                currentPlayer = game.players[0];
+                otherPlayer = game.players[1];
             } else {
-                currentPlayer = game.player2;
-                otherPlayer = game.player1;
+                currentPlayer = game.players[1];
+                otherPlayer = game.players[0];
+            }
+
+            if (currentPlayer.state.finishedWithTurn) {
+                buttonText = "Waiting...";
+                message = "Please wait for other player.";
+            } else if (otherPlayer.state.finishedWithTurn) {
+                message = "Your opponent is waiting for you!";
             }
         }
 
@@ -307,6 +320,8 @@ export default createContainer(() => {
             currentUser: user,
             currentPlayer: currentPlayer,
             otherPlayer: otherPlayer,
+            buttonText: buttonText,
+            message: message,
         };
     } else {
         return {
@@ -314,6 +329,8 @@ export default createContainer(() => {
             currentUser: Meteor.user(),
             currentPlayer: null,
             otherPlayer: null,
+            buttonText: "End Turn",
+            message: "",
         };
     }
 }, Game);

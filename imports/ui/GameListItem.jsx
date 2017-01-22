@@ -48,9 +48,9 @@ class GameListItem extends Component {
      */
     render() {
         // check to see if the game is owned by the current user
-        let owner = this.props.currentUser.username === this.props.game.player1.state.user.username ||
-            (this.props.game.player2.state.user != null &&
-                this.props.currentUser.username === this.props.game.player2.state.user.username);
+        let owner = this.props.currentUser.username === this.props.game.players[0].state.user.username ||
+            (this.props.game.players[1].state.user != null &&
+                this.props.currentUser.username === this.props.game.players[1].state.user.username);
 
         return (
             <li>
@@ -66,8 +66,8 @@ class GameListItem extends Component {
                                     Game</button>
                             }
                         </div>
-                        <div className="col-md-5">Current player(s): {this.props.game.player1.state.user.username} :
-                            {this.props.game.player2.state.user ? ' '+this.props.game.player2.state.user.username : ' [None]'}</div>
+                        <div className="col-md-5">Current player(s): {this.props.game.players[0].state.user.username} :
+                            {this.props.game.players[1].state.user ? ' '+this.props.game.players[1].state.user.username : ' [None]'}</div>
                     </div>
                 </div>
             </li>

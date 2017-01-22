@@ -48,7 +48,7 @@ MainLayout = React.createClass({
                 <br/>
                 <div className="row">
                     <div className="col-md-3">
-                        <a href="https://github.com/is4ac/forest-friends">View on github.</a>
+                        <a target="_blank" href="https://github.com/is4ac/forest-friends">View on github.</a>
                     </div>
                 </div>
             </div>
