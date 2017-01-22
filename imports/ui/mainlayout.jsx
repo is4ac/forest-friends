@@ -31,12 +31,12 @@ MainLayout = React.createClass({
         return (
             <div className="container">
                 <div className="row">
-                    <div className="col-xs-3">
+                    <div className="col-sm-3">
                         { this.props.userId ?
                             <button type="button" className="btn btn-primary" onClick={this.handleClickLogout}>Log Out</button> :
                             <button type="button" className="btn btn-primary" onClick={this.handleClickLogin}>Log In / Sign Up</button>}
                     </div>
-                    <div className="col-xs-6">Welcome to Forest Friends
+                    <div className="col-sm-6">Welcome to Forest Friends
                         {this.props.user ? ', '+this.props.user.username : null}!</div>
                 </div>
                 <br/>

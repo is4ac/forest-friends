@@ -44,7 +44,7 @@ class HexHelper {
             let offset = Math.floor(q / 2); // or q>>1
             for (let r = -offset; r < mapHeight - offset; r++) {
                 // Generate some random stuff for hexagons
-                const text = q + "," + r + ',' + (-q-r);
+                const text = ' '; // q + "," + r + ',' + (-q-r);
                 const image = '../../grass.png';
                 // And Hexagon itself
                 const newHexagon = new Hex(q, r, -q - r, {text, image});
@@ -65,7 +65,7 @@ class HexHelper {
 
         // Init starting animals for each player
         // Player 1 units
-        /*
+
         this.setHexagon(hexagons, 1, 14, 'owl', 3);
         this.setHexagon(hexagons, 1, 7, 'skunk', 3);
         this.setHexagon(hexagons, 1, 8, 'cat', 3);
@@ -84,7 +84,7 @@ class HexHelper {
         this.setHexagon(hexagons, 4, 28, 'owl', 3);
         this.setHexagon(hexagons, 4, 34, 'skunk', 3);
         this.setHexagon(hexagons, 4, 33, 'cat', 3);
-        */
+
 
         return hexagons;
     }

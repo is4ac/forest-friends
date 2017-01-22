@@ -4,6 +4,7 @@
 import React, { Component, PropTypes } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
+import { Player } from './Player.jsx';
 
 class GameListItem extends Component {
     constructor(props) {
@@ -46,15 +47,17 @@ class GameListItem extends Component {
      * Actually render the thing!
      */
     render() {
-        let owner = this.props.currentUser.username === this.props.game.player1.username ||
-                this.props.currentUser.username === this.props.game.player2.username;
+        // check to see if the game is owned by the current user
+        let owner = this.props.currentUser.username === this.props.game.player1.state.user.username ||
+            (this.props.game.player2.state.user != null &&
+                this.props.currentUser.username === this.props.game.player2.state.user.username);
 
         return (
             <li>
                 <div className="container">
                     <div className="row">
                         <div className="col-md-4">Game Name: {this.props.game.name}</div>
-                        <div className="col-md-4">
+                        <div className="col-md-3">
                             {
                                 owner ?
                                     <button type="button" className="btn btn-primary" onClick={this.handleClickRejoin}>Rejoin
@@ -63,8 +66,8 @@ class GameListItem extends Component {
                                     Game</button>
                             }
                         </div>
-                        <div className="col-md-4">Current player(s): {this.props.game.player1.username} :
-                            {this.props.game.player2 ? ' '+this.props.game.player2.username : ' [Waiting for player]'}</div>
+                        <div className="col-md-5">Current player(s): {this.props.game.player1.state.user.username} :
+                            {this.props.game.player2.state.user ? ' '+this.props.game.player2.state.user.username : ' [None]'}</div>
                     </div>
                 </div>
             </li>

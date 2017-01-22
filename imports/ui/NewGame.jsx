@@ -16,6 +16,7 @@ class NewGame extends Component {
         this.state = {
             name: '',
             hexagons: [],
+            cards: null,
         };
 
         this.hexHelper = new HexHelper();
@@ -90,7 +91,7 @@ NewGame.propTypes = {
 
 export default createContainer(() => {
     Meteor.subscribe('games');
-    console.log('NewGame: ' + Games.find().count());
+ //   console.log('NewGame: ' + Games.find().count());
 
     return {
         currentUser: Meteor.user(),

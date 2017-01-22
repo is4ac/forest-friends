@@ -36,7 +36,7 @@ class App extends Component {
           <div className="row">
             <div className="col-md-4">
               {this.props.userId ?
-                  <button type="button" className="btn btn-primary" onClick={this.handleClickLobby.bind(this)}>Game Lobby</button> :
+                  <button type="button" className="btn btn-lg btn-primary" onClick={this.handleClickLobby.bind(this)}>Game Lobby</button> :
               null}
             </div>
           </div>

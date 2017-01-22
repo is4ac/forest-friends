@@ -26,15 +26,12 @@ class Lobby extends Component {
     }
 
     /**
-     * Render the current games
+     * Return all of the current games
      */
     renderGames() {
         let filteredGames = this.props.games;
 
-        console.log('in render games: ' + filteredGames);
-
         if (filteredGames != null) {
-            console.log('in renderGames');
             return filteredGames.map((game) => {
                 return (
                     <div>
@@ -88,7 +85,7 @@ Lobby.propTypes = {
 };
 
 export default createContainer(() => {
-    console.log('Container contains: ' + Games.find({}).count());
+  //  console.log('Container contains: ' + Games.find({}).count());
 
     if (Meteor.subscribe('games').ready()) {
         return {
