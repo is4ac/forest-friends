@@ -93,13 +93,22 @@ class Game extends Component {
 
     /**
      * Select a tile (de-highlights it if it's already selected, highlights it
-     * and unhighlights anything else if it's not already selected)
+     * and unhighlights anything else if it's not already selected).
+     * It also highlights all bordering tiles (unless it is owned by the current player)
      */
     selectTile(index) {
         this.unhighlightAll();
 
         if (index != this.state.selectedHexIndex) {
             this.highlightHex(this.props.currentPlayer.state.hexagons[index]);
+
+            // highlight everything surrounding it
+            this.props.currentPlayer.state.hexagons.forEach(function (hex) {
+                if (this.hexHelper.isBordering(hex, index) &&
+                    !this.hexHelper.isHexOwnedBy(hex, this.getCurrentPlayerNumber())) {
+                    this.highlightHex(hex);
+                }
+            }, this);
         }
     }
 
@@ -146,12 +155,12 @@ class Game extends Component {
 
         let playerNumber = this.getCurrentPlayerNumber();
 
-        // only select the tile if it is owned by the player
-        if (this.hexHelper.isHexOwnedBy(hex, playerNumber)) {
-            // get the current hexIndex
-            let hexIndex = this.hexHelper.convertHexGridToArrayIndex(hex);
-            //    console.log('user: ' + this.props.currentUser.username + ', hex: ' + hexIndex);
+        // get the current hexIndex
+        let hexIndex = this.hexHelper.convertHexToArrayIndex(hex);
 
+        // change the highlighted hexes if player selects a tile they own
+        if (this.hexHelper.isHexOwnedBy(hex, playerNumber)) {
+            //    console.log('user: ' + this.props.currentUser.username + ', hex: ' + hexIndex);
             // reset the highlighted index based on database (in case of reloading)
             this.setState({selectedHexIndex: this.props.currentPlayer.state.selectedHexIndex});
             this.selectTile(hexIndex);
@@ -166,6 +175,10 @@ class Game extends Component {
             }
 
             Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
+        }
+        // do an action if user has already selected a tile and is now clicking on a tile bordering it
+        else if (this.hexHelper.isBordering(hex, this.state.selectedHexIndex)) {
+
         }
     }
 

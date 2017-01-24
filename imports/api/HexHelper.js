@@ -15,8 +15,71 @@ class HexHelper {
         };
     }
 
-    convertHexGridToArrayIndex(hex) {
+    /**
+     * Converts the Hex object to an array index value, given the config values
+     * @param hex
+     * @returns {*}
+     */
+    convertHexToArrayIndex(hex) {
         return this.config.mapHeight * hex.q + hex.r + Math.floor(hex.q/2);
+    }
+
+    /**
+     * Returns true if the hex is bordering the hex at selectedIndex
+     * @param hex
+     * @param selectedIndex
+     */
+    isBordering(hex, selectedIndex) {
+        let borderIndex = this.convertHexToArrayIndex(hex);
+        let bordering = false;
+
+        // check above (if there is an above)
+        if (selectedIndex % 6 != 0) {
+            bordering = borderIndex == selectedIndex - 1 ? true : bordering;
+        }
+
+        // check below (if there is a below)
+        if ((selectedIndex+1) % 6 != 0) {
+            bordering = borderIndex == selectedIndex + 1 ? true : bordering;
+        }
+
+        // check upper right (if exists)
+        if (selectedIndex < 36 && selectedIndex != 0 && selectedIndex != 12 && selectedIndex != 24) {
+            if (selectedIndex < 6 || (selectedIndex > 11 && selectedIndex < 18) || (selectedIndex > 23 && selectedIndex < 30)) {
+                bordering = borderIndex == selectedIndex + 5 ? true : bordering;
+            } else {
+                bordering = borderIndex == selectedIndex + 6 ? true : bordering;
+            }
+        }
+
+        // check lower right (if exists)
+        if (selectedIndex < 36 && selectedIndex != 11 && selectedIndex != 23 && selectedIndex != 35) {
+            if (selectedIndex < 6 || (selectedIndex > 11 && selectedIndex < 18) || (selectedIndex > 23 && selectedIndex < 30)) {
+                bordering = borderIndex == selectedIndex + 6 ? true : bordering;
+            } else {
+                bordering = borderIndex == selectedIndex + 7 ? true : bordering;
+            }
+        }
+
+        // check upper left (if exists)
+        if (selectedIndex >= 6 && selectedIndex != 12 && selectedIndex != 24 && selectedIndex != 36) {
+            if (selectedIndex > 36 || (selectedIndex > 11 && selectedIndex < 18) || (selectedIndex > 23 && selectedIndex < 30)) {
+                bordering = borderIndex == selectedIndex - 7 ? true : bordering;
+            } else {
+                bordering = borderIndex == selectedIndex - 6 ? true : bordering;
+            }
+        }
+
+        // check lower left (if exists)
+        if (selectedIndex >= 6 && selectedIndex != 11 && selectedIndex != 23 && selectedIndex != 35) {
+            if (selectedIndex >= 36 || (selectedIndex > 11 && selectedIndex < 18) || (selectedIndex > 23 && selectedIndex < 30)) {
+                bordering = borderIndex == selectedIndex - 6 ? true : bordering;
+            } else {
+                bordering = borderIndex == selectedIndex - 5 ? true : bordering;
+            }
+        }
+
+        return bordering;
     }
 
     /**
