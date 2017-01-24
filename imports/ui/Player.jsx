@@ -3,7 +3,6 @@
  */
 import React, { Component, PropTypes } from 'react';
 import { createContainer } from 'meteor/react-meteor-data';
-import { HexGrid, Layout, Hex } from 'react-hexgrid';
 import { HexHelper } from '../api/HexHelper.js';
 
 /**

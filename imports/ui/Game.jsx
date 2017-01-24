@@ -5,7 +5,7 @@ import React, { Component, PropTypes } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
 import { Games } from '../../lib/games.js';
-import { HexGrid, Layout, Hex } from 'react-hexgrid';
+import { HexGrid, Layout, Hex } from '../react-hexgrid';
 import { FlowRouter } from 'meteor/kadira:flow-router-ssr';
 import { HexHelper } from '../api/HexHelper.js';
 import { Player } from './Player.jsx';

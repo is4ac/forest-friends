@@ -1,0 +1,11 @@
+{
+  "galaxy.meteor.com": {
+    "env": {
+      "MONGO_URL": "mongodb://isung:Tjdckdtjr1731!!@ds127439.mlab.com:27439/forestfriendsdb",
+      "ROOT_URL": "https://forestfriends.meteorapp.com/",
+      "DEPLOY_HOSTNAME":"galaxy.meteor.com"
+    }
+  },
+  "public": {},
+  "private": {}
+}

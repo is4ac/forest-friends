@@ -2,11 +2,11 @@
   "name": "forest-friends",
   "private": true,
   "scripts": {
-    "start": "meteor run"
+    "start": "meteor run",
+    "production": "DEPLOY_HOSTNAME=us-east-1.galaxy-deploy.meteor.com meteor deploy forestfriends.meteorapp.com --owner isung --settings settings-production.json"
   },
   "dependencies": {
     "babel-runtime": "^6.20.0",
-    "bcrypt": "^1.0.2",
     "classnames": "^2.2.3",
     "index.js": "0.0.3",
     "lib": "^1.1.0-rc2",
@@ -14,7 +14,9 @@
     "react": "^15.4.2",
     "react-addons-pure-render-mixin": "^15.4.1",
     "react-dom": "^15.4.2",
-    "react-hexgrid": "^0.1.8",
     "react-mounter": "^1.2.0"
+  },
+  "devDependencies": {
+    "bcrypt": "^1.0.2"
   }
 }

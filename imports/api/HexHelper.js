@@ -5,7 +5,7 @@
  Actions and events for the hex tiles
  */
 import React, { Component, PropTypes } from 'react';
-import { HexGrid, Layout, Hex } from 'react-hexgrid';
+import { HexGrid, Layout, Hex } from '../react-hexgrid';
 
 class HexHelper {
     constructor() {
