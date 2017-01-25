@@ -9,6 +9,7 @@ import { HexGrid, Layout, Hex } from '../react-hexgrid';
 import { FlowRouter } from 'meteor/kadira:flow-router-ssr';
 import { HexHelper } from '../api/HexHelper.js';
 import { Player } from './Player.jsx';
+import { Dice } from '../api/Dice.js';
 
 /**
  * This component generates the Hex grid map (and eventually the cards) for game play
@@ -32,6 +33,8 @@ class Game extends Component {
         this.handleClickEndTurn = this.handleClickEndTurn.bind(this);
         this.getCurrentPlayerNumber = this.getCurrentPlayerNumber.bind(this);
         this.unhighlightBothPlayers = this.unhighlightBothPlayers.bind(this);
+        this.moveUnits = this.moveUnits.bind(this);
+        this.copyHexagons = this.copyHexagons.bind(this);
 
         this.hexHelper = new HexHelper();
 
@@ -49,6 +52,22 @@ class Game extends Component {
     /*********************************************************************
      * Game helper functions
      *********************************************************************/
+
+    /**
+     * Copies the hexagons from the player who was selecting tiles over to the
+     * other player who was selecting cards
+     */
+    copyHexagons() {
+        if (this.props.currentPlayer.state.canSelectTiles) {
+            for (let i = 0; i < this.props.currentPlayer.state.hexagons.length; i++) {
+                this.props.otherPlayer.state.hexagons[i] = this.hexHelper.clone(this.props.currentPlayer.state.hexagons[i]);
+            }
+        } else {
+            for (let i = 0; i < this.props.otherPlayer.state.hexagons.length; i++) {
+                this.props.currentPlayer.state.hexagons[i] = this.hexHelper.clone(this.props.otherPlayer.state.hexagons[i]);
+            }
+        }
+    }
 
     /**
      * Highlight a hex tile image
@@ -91,6 +110,10 @@ class Game extends Component {
         }, this);
     }
 
+    isHighlighted(hex) {
+        return hex.props.image.slice(-8) === 'ight.png';
+    }
+
     /**
      * Select a tile (de-highlights it if it's already selected, highlights it
      * and unhighlights anything else if it's not already selected).
@@ -104,8 +127,12 @@ class Game extends Component {
 
             // highlight everything surrounding it
             this.props.currentPlayer.state.hexagons.forEach(function (hex) {
+                let playerNum = this.getCurrentPlayerNumber();
+                let playerAlly = playerNum+2;
+
                 if (this.hexHelper.isBordering(hex, index) &&
-                    !this.hexHelper.isHexOwnedBy(hex, this.getCurrentPlayerNumber())) {
+                    !this.hexHelper.isHexOwnedBy(hex, playerNum) &&
+                    !this.hexHelper.isHexOwnedBy(hex, playerAlly)) {
                     this.highlightHex(hex);
                 }
             }, this);
@@ -119,6 +146,17 @@ class Game extends Component {
     getCurrentPlayerNumber() {
         return this.props.currentPlayer.state.user.username === this.props.game.players[0].state.user.username
             ? 0 : 1;
+    }
+
+    moveUnits(fromIndex, toIndex, amount) {
+        let fromHex = this.props.currentPlayer.state.hexagons[fromIndex];
+        let toHex = this.props.currentPlayer.state.hexagons[toIndex];
+
+        let fromNum = parseInt(fromHex.props.text);
+        fromHex.props.text = (fromNum - amount) + '';
+
+        toHex.props.text = amount+'';
+        toHex.props.image = fromHex.props.image;
     }
 
     /*********************************************************************
@@ -153,32 +191,83 @@ class Game extends Component {
     onClick(hex, event) {
         event.preventDefault();
 
-        let playerNumber = this.getCurrentPlayerNumber();
+        // only do an action on the board if it's their turn to
+        if (this.props.currentPlayer.state.canSelectTiles) {
+            let playerNumber = this.getCurrentPlayerNumber();
 
-        // get the current hexIndex
-        let hexIndex = this.hexHelper.convertHexToArrayIndex(hex);
+            // get the new hexIndex of what was just clicked
+            let hexIndex = this.hexHelper.convertHexToArrayIndex(hex);
 
-        // change the highlighted hexes if player selects a tile they own
-        if (this.hexHelper.isHexOwnedBy(hex, playerNumber)) {
-            //    console.log('user: ' + this.props.currentUser.username + ', hex: ' + hexIndex);
-            // reset the highlighted index based on database (in case of reloading)
-            this.setState({selectedHexIndex: this.props.currentPlayer.state.selectedHexIndex});
-            this.selectTile(hexIndex);
+            // change the highlighted hexes if player selects a tile they own
+            if (this.hexHelper.isHexOwnedBy(hex, playerNumber) && hex.props.text != '1') {
+                //    console.log('user: ' + this.props.currentUser.username + ', hex: ' + hexIndex);
+                // reset the highlighted index based on database (in case of reloading)
+                this.setState({selectedHexIndex: this.props.currentPlayer.state.selectedHexIndex});
+                this.selectTile(hexIndex);
 
-            // player 1's tiles should change
-            if (hexIndex == this.props.currentPlayer.state.selectedHexIndex) {
-                this.setState({selectedHexIndex: -1});
-                Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, -1);
-            } else {
-                this.setState({selectedHexIndex: hexIndex});
-                Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, hexIndex);
+                // update the database
+                if (hexIndex == this.props.currentPlayer.state.selectedHexIndex) {
+                    // de-select tile if clicking on already selected tile
+                    this.setState({selectedHexIndex: -1});
+                    Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, -1);
+                } else {
+                    this.setState({selectedHexIndex: hexIndex});
+                    Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, hexIndex);
+                }
+
+                Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
             }
+            // do an action if user has already selected a tile and is now clicking on a tile bordering it (highlighted)
+            // (and unowned by the player)
+            else if (this.isHighlighted(hex)) {
+                // create a Dice object
+                let dice = new Dice();
 
-            Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
-        }
-        // do an action if user has already selected a tile and is now clicking on a tile bordering it
-        else if (this.hexHelper.isBordering(hex, this.state.selectedHexIndex)) {
+                console.log("selected:", this.state.selectedHexIndex);
+                let currentHex = this.props.currentPlayer.state.hexagons[this.state.selectedHexIndex];
 
+                // do an attack!
+                let armySize = parseInt(currentHex.props.text);
+                let roll = dice.diceRoll(armySize);
+                let sum = roll.reduce(function (a, b) {
+                    return a + b;
+                }, 0);
+
+                // if the selected hex is empty, than just expand to that location
+                if (this.hexHelper.isHexOwnedBy(hex, -1)) {
+                    console.log("Attack successful! Expanding to new territory!");
+                    this.moveUnits(this.state.selectedHexIndex, hexIndex, parseInt(currentHex.props.text) - 1);
+                }
+                // if occupied by opponent, then attack!
+                else {
+                    // get attack roll of opponent
+                    let opponentArmySize = parseInt(hex.props.text);
+                    let opponentRoll = dice.diceRoll(opponentArmySize);
+                    let opponentSum = opponentRoll.reduce(function (a, b) {
+                        return a + b;
+                    }, 0);
+
+                    // TODO: a more complicated version of attacking where we compare each dice roll separately
+                    // for now, just compare the sums and do it all-or-nothing style
+                    if (sum > opponentSum) {
+                        // currentPlayer wins the attack!
+                        console.log("Attack successful! Moving units..");
+                        this.moveUnits(this.state.selectedHexIndex, hexIndex, armySize - 1);
+                    } else {
+                        console.log("Attack failed...");
+                        // opponent defends successfully!
+                        // reduce selectedHex number down to 1
+                        currentHex.props.text = '1';
+                    }
+                }
+                // clean up of tiles and selections
+                this.unhighlightAll();
+                this.setState({selectedHexIndex: -1});
+
+                // update database
+                Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
+                Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, -1);
+            }
         }
     }
 
@@ -217,16 +306,18 @@ class Game extends Component {
 
         // end the turn if the opponent is finished with their turn
         if (this.props.otherPlayer.state.finishedWithTurn) {
-            console.log('calling changeTurns');
-            Meteor.call('games.changeTurns', this.props.id);
             this.props.message = "";
 
             // reset the tile selections
             let current = this.getCurrentPlayerNumber();
             this.unhighlightBothPlayers();
+            this.copyHexagons();
 
             Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
             Meteor.call('games.updateHexagons', this.props.id, 1-current, this.props.otherPlayer.state.hexagons);
+
+            console.log('calling changeTurns');
+            Meteor.call('games.changeTurns', this.props.id);
         } else {
             // otherwise, wait for them to finish!!
             console.log('wait!');

@@ -108,7 +108,7 @@ class HexHelper {
             for (let r = -offset; r < mapHeight - offset; r++) {
                 // Generate some random stuff for hexagons
                 const text = ' '; // q + "," + r + ',' + (-q-r);
-                const image = '../../grass.png';
+                const image = '../../grass0.png';
                 // And Hexagon itself
                 const newHexagon = new Hex(q, r, -q - r, {text, image});
                 hexes.push(newHexagon);
@@ -120,6 +120,7 @@ class HexHelper {
 
     /**
      * Returns whether or not the given hex is owned by the player number (0 or 1)
+     * -1 player number indicates that it is a terrain tile
      * @param hex
      * @param player
      */
@@ -160,6 +161,11 @@ class HexHelper {
 
 
         return hexagons;
+    }
+
+    clone(hex) {
+        let cloneHex = new Hex(hex.q, hex.r, hex.s, hex.props);
+        return cloneHex;
     }
 }
 
