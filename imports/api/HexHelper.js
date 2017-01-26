@@ -1,8 +1,6 @@
 /**
  * Created by isung on 1/18/17.
- */
-/*
- Actions and events for the hex tiles
+ * Helper class for hex grid tile interactions
  */
 import React, { Component, PropTypes } from 'react';
 import { HexGrid, Layout, Hex } from '../react-hexgrid';
@@ -90,7 +88,7 @@ class HexHelper {
      * @param animal 'owl', 'skunk', or 'cat'
      * @param amount the number of units
      */
-    setHexagon(hexagons, player, location, animal, amount) {
+    static setHexagon(hexagons, player, location, animal, amount) {
         hexagons[location].props.image = '../../' + animal + player + '.png';
         hexagons[location].props.text = amount + '';
     }
@@ -124,7 +122,7 @@ class HexHelper {
      * @param hex
      * @param player
      */
-    isHexOwnedBy(hex, player) {
+    static isHexOwnedBy(hex, player) {
         let number = (player + 1) + '';
         return hex.props.image.indexOf(number) > -1;
     }
@@ -140,32 +138,36 @@ class HexHelper {
         // Init starting animals for each player
         // Player 1 units
 
-        this.setHexagon(hexagons, 1, 14, 'owl', 3);
-        this.setHexagon(hexagons, 1, 7, 'skunk', 3);
-        this.setHexagon(hexagons, 1, 8, 'cat', 3);
+        HexHelper.setHexagon(hexagons, 1, 14, 'owl', 3);
+        HexHelper.setHexagon(hexagons, 1, 7, 'skunk', 3);
+        HexHelper.setHexagon(hexagons, 1, 8, 'cat', 3);
 
         // Player 2 units
-        this.setHexagon(hexagons, 2, 26, 'owl', 3);
-        this.setHexagon(hexagons, 2, 32, 'skunk', 3);
-        this.setHexagon(hexagons, 2, 31, 'cat', 3);
+        HexHelper.setHexagon(hexagons, 2, 26, 'owl', 3);
+        HexHelper.setHexagon(hexagons, 2, 32, 'skunk', 3);
+        HexHelper.setHexagon(hexagons, 2, 31, 'cat', 3);
 
         // AI 1 units (ally of P1)
-        this.setHexagon(hexagons, 3, 16, 'owl', 3);
-        this.setHexagon(hexagons, 3, 9, 'skunk', 3);
-        this.setHexagon(hexagons, 3, 10, 'cat', 3);
+        HexHelper.setHexagon(hexagons, 3, 16, 'owl', 3);
+        HexHelper.setHexagon(hexagons, 3, 9, 'skunk', 3);
+        HexHelper.setHexagon(hexagons, 3, 10, 'cat', 3);
 
         // AI 2 units (ally of P2)
-        this.setHexagon(hexagons, 4, 28, 'owl', 3);
-        this.setHexagon(hexagons, 4, 34, 'skunk', 3);
-        this.setHexagon(hexagons, 4, 33, 'cat', 3);
-
-
+        HexHelper.setHexagon(hexagons, 4, 28, 'owl', 3);
+        HexHelper.setHexagon(hexagons, 4, 34, 'skunk', 3);
+        HexHelper.setHexagon(hexagons, 4, 33, 'cat', 3);
         return hexagons;
     }
 
-    clone(hex) {
+    static clone(hex) {
         let cloneHex = new Hex(hex.q, hex.r, hex.s, hex.props);
         return cloneHex;
+    }
+
+    static cloneHexagons(hexagonsTo, hexagonsFrom) {
+        for (let i = 0; i < hexagonsFrom.length; i++) {
+            hexagonsTo[i] = this.clone(hexagonsFrom[i]);
+        }
     }
 }
 

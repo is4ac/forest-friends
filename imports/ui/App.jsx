@@ -27,7 +27,7 @@ class App extends Component {
   }
 
   /**
-   * If user is logged in, display the Game Lobby button
+   * If user is logged in, display the GameDisplay Lobby button
    * @returns {XML}
      */
   render() {
