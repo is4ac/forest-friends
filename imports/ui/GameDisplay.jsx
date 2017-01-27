@@ -5,12 +5,8 @@
 import React, { Component, PropTypes } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
-import { Games } from '../../lib/games.js';
 import { HexGrid, Layout, Hex } from '../react-hexgrid';
 import { FlowRouter } from 'meteor/kadira:flow-router-ssr';
-import { HexHelper } from '../api/HexHelper.js';
-import { Player } from './Player.jsx';
-import { Dice } from '../api/Dice.js';
 
 /**
  * This component generates the Hex grid map (and eventually the cards) for game play
@@ -74,23 +70,6 @@ class GameDisplay extends Component {
                                                         layout={layout}
                                                         actions={this.state.actions} />
                                             : null}
-                        </div>
-                        <div className="row">
-                            <div className="col-sm-4">
-                                <button type="button" className="btn btn-lg btn-success" onClick={this.props.handleClickEndTurn}>
-                                    {this.props.buttonText}
-                                </button>
-                            </div>
-                            <div className="col-sm-4">
-                                <button type="button" className="btn btn-lg btn-primary" onClick={this.props.handleClickLobby}>Back to
-                                    lobby
-                                </button>
-                            </div>
-                            <div className="col-sm-4">
-                                <button type="button" className="btn btn-lg btn-danger" onClick={this.props.handleClickDelete}>Delete
-                                    game
-                                </button>
-                            </div>
                         </div>
                     </div>
                     :

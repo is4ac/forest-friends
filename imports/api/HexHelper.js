@@ -128,6 +128,21 @@ class HexHelper {
     }
 
     /**
+     * returns a string of the animal name that this hex is
+     * @param hex
+     * @returns {*}
+     */
+    static getAnimal(hex) {
+        if (hex.props.image.indexOf('owl') > -1) {
+            return 'owl';
+        } else if (hex.props.image.indexOf('cat') > -1) {
+            return 'cat';
+        } else {
+            return 'skunk';
+        }
+    }
+
+    /**
      * Initializing function for creating the game
      */
     initialize() {

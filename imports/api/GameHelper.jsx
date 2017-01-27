@@ -4,23 +4,24 @@
  */
 import React, { Component, PropTypes } from 'react';
 import { HexGrid, Layout, Hex } from '../react-hexgrid';
-import { HexHelper } from '../api/HexHelper.js';
+import { HexHelper } from './HexHelper.js';
 import { createContainer } from 'meteor/react-meteor-data';
 import { Games } from '../../lib/games.js';
-import GameDisplay from './GameDisplay.jsx';
-import { Dice } from '../api/Dice.js';
+import GameDisplay from '../ui/GameDisplay.jsx';
+import { Dice } from './Dice.js';
+import CardsDisplay from '../ui/CardsDisplay.jsx';
+import { GameButtons } from '../ui/GameButtons.jsx';
 
 class GameHelper extends Component {
     constructor(props) {
         super(props);
 
-        let boardConfig = {
-            width: 500, height: 500,
-        }
-        
         this.state = {
-            boardConfig: boardConfig,
-            REINFORCEMENTS: 3,
+            boardConfig: {
+                            width: 500,
+                            height: 500,
+                         },
+            REINFORCEMENTS: 3, // how many reinforcements each player gets at the end of each turn
         }
 
         // helper class for hex tile calculations/actions
@@ -44,6 +45,7 @@ class GameHelper extends Component {
         this.attack = this.attack.bind(this);
         this.reinforce = this.reinforce.bind(this);
         this.addOne = this.addOne.bind(this);
+        this.renderSelection = this.renderSelection.bind(this);
     }
 
     /**
@@ -242,6 +244,38 @@ class GameHelper extends Component {
     }
 
     /**
+     * Returns true if you win the attack and false if they win the defense
+     * Calculates bonuses based on animals. Owls > skunks > bobcats > owls
+     * @param yourSum
+     * @param theirSum
+     * @param yourHex
+     * @param theirHex
+     */
+    compareAdvantage(yourSum, theirSum, yourHex, theirHex) {
+        let yourAnimal = HexHelper.getAnimal(yourHex);
+        let theirAnimal = HexHelper.getAnimal(theirHex);
+
+        // TODO: need to balance the advantage bonus to see if *2 is too much. maybe *1.5?
+        if ((yourAnimal === 'owl' && theirAnimal === 'skunk') ||
+            (yourAnimal === 'skunk' && theirAnimal === 'cat') ||
+            (yourAnimal === 'cat' && theirAnimal === 'owl')) {
+            // you have the advantage!
+            console.log('you get a 2x bonus! :)');
+            return (yourSum * 2) > theirSum;
+        } else if ((yourAnimal === 'skunk' && theirAnimal === 'owl') ||
+                    (yourAnimal === 'cat' && theirAnimal === 'skunk') ||
+                    (yourAnimal === 'owl' && theirAnimal === 'cat')) {
+            // you have the disadvantage!
+            console.log('they get a 2x bonus... :(');
+            return yourSum > (theirSum * 2);
+        } else {
+            // both are the same, no advantages
+            console.log('no bonuses');
+            return yourSum > theirSum;
+        }
+    }
+
+    /**
      * Attack an adjacent tile
      */
     attack(myIndex, opponentIndex) {
@@ -254,6 +288,7 @@ class GameHelper extends Component {
         // do an attack! roll for your units
         let armySize = parseInt(currentHex.props.text);
         let roll = dice.diceRoll(armySize);
+        console.log('your attack roll:', roll);
         let sum = roll.reduce(function (a, b) {
             return a + b;
         }, 0);
@@ -261,6 +296,7 @@ class GameHelper extends Component {
         // get attack roll of opponent
         let opponentArmySize = parseInt(opponentHex.props.text);
         let opponentRoll = dice.diceRoll(opponentArmySize);
+        console.log('their attack roll:', opponentRoll);
         let opponentSum = opponentRoll.reduce(function (a, b) {
             return a + b;
         }, 0);
@@ -268,11 +304,12 @@ class GameHelper extends Component {
         // TODO: a more complicated version of attacking where we compare each dice roll separately
         // TODO: take into consideration weaknesses and bonuses based on animal type
         // for now, just compare the sums and do it all-or-nothing style
-        if (sum > opponentSum) {
+        if (this.compareAdvantage(sum, opponentSum, currentHex, opponentHex)) {
             // currentPlayer wins the attack!
             console.log("Attack successful! Moving units..");
             this.moveUnits(myIndex, opponentIndex, armySize - 1);
         } else {
+            // TODO: in future versions failed attacks might only cause losses based on how many dice rolled smaller numbers compared to the opponent
             console.log("Attack failed...");
             // opponent defends successfully!
             // reduce selectedHex number down to 1
@@ -358,25 +395,38 @@ class GameHelper extends Component {
             Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
         }
     }
-    
-    render() {
-        return (
-            <div>
-                { this.props.game ?
+
+    renderSelection(flag) {
+        if (flag) {
+            return (
+                <div>
                     <GameDisplay
                         game={this.props.game}
                         onClick={this.onClick.bind(this)}
                         boardConfig={this.state.boardConfig}
-                        handleClickEndTurn={this.handleClickEndTurn.bind(this)}
-                        handleClickDelete={this.handleClickDelete.bind(this)}
-                        handleClickLobby={this.handleClickLobby.bind(this)}
                         currentUser={this.props.currentUser}
                         currentPlayer={this.props.currentPlayer}
                         otherPlayer={this.props.otherPlayer}
+                        message={this.props.message} />
+                    <CardsDisplay
+                        hand={this.props.currentPlayer.state.hand}
+                        playedCards={this.props.currentPlayer.state.playedCards}
+                    />
+                    <GameButtons
+                        handleClickEndTurn={this.handleClickEndTurn.bind(this)}
+                        handleClickDelete={this.handleClickDelete.bind(this)}
+                        handleClickLobby={this.handleClickLobby.bind(this)}
                         buttonText={this.props.buttonText}
-                        message={this.props.message} /> :
-                    null
-                }
+                    />
+                </div>
+            );
+        }
+    }
+    
+    render() {
+        return (
+            <div>
+                {this.renderSelection(this.props.game)}
             </div>
         );
     }

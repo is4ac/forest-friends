@@ -8,6 +8,7 @@ import { FlowRouter } from 'meteor/kadira:flow-router-ssr';
 import { createContainer } from 'meteor/react-meteor-data';
 import { Games } from '../../lib/games.js';
 import { HexHelper } from '../api/HexHelper.js';
+import { Card } from '../api/Card.js';
 
 class NewGame extends Component {
     constructor(props) {
@@ -16,7 +17,7 @@ class NewGame extends Component {
         this.state = {
             name: '',
             hexagons: [],
-            cards: null,
+            cards: [ new Card("TEST CARD", "Man this card is really really cool!!!") ],
         };
 
         this.hexHelper = new HexHelper();
