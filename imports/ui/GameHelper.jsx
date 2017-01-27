@@ -8,10 +8,42 @@ import { HexHelper } from '../api/HexHelper.js';
 import { createContainer } from 'meteor/react-meteor-data';
 import { Games } from '../../lib/games.js';
 import GameDisplay from './GameDisplay.jsx';
+import { Dice } from '../api/Dice.js';
 
 class GameHelper extends Component {
-    constructor() {
+    constructor(props) {
+        super(props);
+
+        let boardConfig = {
+            width: 500, height: 500,
+        }
+        
+        this.state = {
+            boardConfig: boardConfig,
+            REINFORCEMENTS: 3,
+        }
+
+        // helper class for hex tile calculations/actions
         this.hexHelper = new HexHelper();
+
+        // all the function bindings so they can access props
+        this.onMouseEnter = this.onMouseEnter.bind(this);
+        this.onMouseLeave = this.onMouseLeave.bind(this);
+        this.onClick = this.onClick.bind(this);
+        this.handleClickDelete = this.handleClickDelete.bind(this);
+        this.handleClickEndTurn = this.handleClickEndTurn.bind(this);
+        this.getCurrentPlayerNumber = this.getCurrentPlayerNumber.bind(this);
+        this.handleClickLobby = this.handleClickLobby.bind(this);
+        this.copyHexagons = this.copyHexagons.bind(this);
+        this.highlightHex = this.highlightHex.bind(this);
+        this.unhighlightHex = this.unhighlightHex.bind(this);
+        this.unhighlightAll = this.unhighlightAll.bind(this);
+        this.unhighlightBothPlayers = this.unhighlightBothPlayers.bind(this);
+        this.selectTile = this.selectTile.bind(this);
+        this.moveUnits = this.moveUnits.bind(this);
+        this.attack = this.attack.bind(this);
+        this.reinforce = this.reinforce.bind(this);
+        this.addOne = this.addOne.bind(this);
     }
 
     /**
@@ -43,13 +75,22 @@ class GameHelper extends Component {
     handleClickEndTurn(event) {
         event.preventDefault();
 
+        let current = this.getCurrentPlayerNumber();
+
+        // randomly reinforce the current turn's units
+        if (this.props.currentUser.username === this.props.game.currentTurn.state.user.username) {
+            this.reinforce();
+            Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
+        }
+
         // end the turn if the opponent is finished with their turn
         if (this.props.otherPlayer.state.finishedWithTurn) {
             this.props.message = "";
 
             // reset the tile selections
-            let current = this.getCurrentPlayerNumber();
-            this.gameHelper.unhighlightBothPlayers();
+            this.unhighlightBothPlayers();
+
+            // transfer hexagon data to other player's state so it shows up on their screen
             this.copyHexagons();
 
             Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
@@ -66,15 +107,42 @@ class GameHelper extends Component {
         }
     }
 
+    addOne(index) {
+        let num = parseInt(this.props.currentPlayer.state.hexagons[index].props.text);
+        this.props.currentPlayer.state.hexagons[index].props.text = (num+1)+'';
+    }
+
+    /**
+     * Randomly reinforces tiles owned by the current player with 3 units total
+     * TODO: (maybe increased if certain conditions are met, # of tiles owned, # of special tiles owned, etc)
+     */
+    reinforce() {
+        let indexArray = [];
+        let hexes = this.props.currentPlayer.state.hexagons;
+
+        // create array of hex indices owned by the player
+        for (let i = 0; i < hexes.length; i++) {
+            if (HexHelper.isHexOwnedBy(hexes[i], this.getCurrentPlayerNumber())) {
+                indexArray.push(i);
+            }
+        }
+
+        // randomly generate indices to reinforce
+        for (let i = 0; i < this.state.REINFORCEMENTS; i++) {
+            let randInd = indexArray[Math.floor((Math.random() * indexArray.length))];
+            this.addOne(randInd);
+        }
+    }
+
     /**
      * Copies the hexagons from the player who was selecting tiles over to the
      * other player who was selecting cards
      */
     copyHexagons() {
-        if (this.currentPlayer.state.canSelectTiles) {
-            HexHelper.cloneHexagons(this.otherPlayer.state.hexagons, this.currentPlayer.state.hexagons);
+        if (this.props.currentPlayer.state.canSelectTiles) {
+            HexHelper.cloneHexagons(this.props.otherPlayer.state.hexagons, this.props.currentPlayer.state.hexagons);
         } else {
-            HexHelper.cloneHexagons(this.currentPlayer.state.hexagons, this.otherPlayer.state.hexagons);
+            HexHelper.cloneHexagons(this.props.currentPlayer.state.hexagons, this.props.otherPlayer.state.hexagons);
         }
     }
 
@@ -98,7 +166,7 @@ class GameHelper extends Component {
      * unhighlight all
      */
     unhighlightAll() {
-        this.currentPlayer.state.hexagons.forEach(function (hex) {
+        this.props.currentPlayer.state.hexagons.forEach(function (hex) {
             let ending = hex.props.image.slice(-8);
 
             if (ending === 'ight.png') {
@@ -110,7 +178,7 @@ class GameHelper extends Component {
     unhighlightBothPlayers() {
         this.unhighlightAll();
 
-        this.otherPlayer.state.hexagons.forEach(function (hex) {
+        this.props.otherPlayer.state.hexagons.forEach(function (hex) {
             let ending = hex.props.image.slice(-8);
 
             if (ending === 'ight.png') {
@@ -132,10 +200,10 @@ class GameHelper extends Component {
         this.unhighlightAll();
 
         if (index != selectedHexIndex) {
-            this.highlightHex(this.currentPlayer.state.hexagons[index]);
+            this.highlightHex(this.props.currentPlayer.state.hexagons[index]);
 
             // highlight everything surrounding it
-            this.currentPlayer.state.hexagons.forEach(function (hex) {
+            this.props.currentPlayer.state.hexagons.forEach(function (hex) {
                 let playerAlly = playerNum+2;
 
                 if (this.hexHelper.isBordering(hex, index) &&
@@ -154,8 +222,8 @@ class GameHelper extends Component {
      * @param amount
      */
     moveUnits(fromIndex, toIndex, amount) {
-        let fromHex = this.currentPlayer.state.hexagons[fromIndex];
-        let toHex = this.currentPlayer.state.hexagons[toIndex];
+        let fromHex = this.props.currentPlayer.state.hexagons[fromIndex];
+        let toHex = this.props.currentPlayer.state.hexagons[toIndex];
 
         let fromNum = parseInt(fromHex.props.text);
         fromHex.props.text = (fromNum - amount) + '';
@@ -165,12 +233,82 @@ class GameHelper extends Component {
     }
 
     /**
+     * Returns 0 if the currentPlayer is players[0], and 1 otherwise
+     * @returns {number}
+     */
+    getCurrentPlayerNumber() {
+        return this.props.currentPlayer.state.user.username === this.props.game.players[0].state.user.username
+            ? 0 : 1;
+    }
+
+    /**
+     * Attack an adjacent tile
+     */
+    attack(myIndex, opponentIndex) {
+        // create a Dice object
+        let dice = new Dice();
+
+        let currentHex = this.props.currentPlayer.state.hexagons[myIndex];
+        let opponentHex = this.props.currentPlayer.state.hexagons[opponentIndex];
+
+        // do an attack! roll for your units
+        let armySize = parseInt(currentHex.props.text);
+        let roll = dice.diceRoll(armySize);
+        let sum = roll.reduce(function (a, b) {
+            return a + b;
+        }, 0);
+
+        // get attack roll of opponent
+        let opponentArmySize = parseInt(opponentHex.props.text);
+        let opponentRoll = dice.diceRoll(opponentArmySize);
+        let opponentSum = opponentRoll.reduce(function (a, b) {
+            return a + b;
+        }, 0);
+
+        // TODO: a more complicated version of attacking where we compare each dice roll separately
+        // TODO: take into consideration weaknesses and bonuses based on animal type
+        // for now, just compare the sums and do it all-or-nothing style
+        if (sum > opponentSum) {
+            // currentPlayer wins the attack!
+            console.log("Attack successful! Moving units..");
+            this.moveUnits(myIndex, opponentIndex, armySize - 1);
+        } else {
+            console.log("Attack failed...");
+            // opponent defends successfully!
+            // reduce selectedHex number down to 1
+            currentHex.props.text = '1';
+        }
+    }
+
+    /**
+     * Actions whenever a mouse hovers over a tile
+     * @param hex
+     * @param event
+     */
+    onMouseEnter(hex, event) {
+        event.preventDefault();
+        //   console.log('onMouseEnter', hex, event);
+    }
+
+    /**
+     * Actions whenever a mouse leaves a tile
+     * @param hex
+     * @param event
+     */
+    onMouseLeave(hex, event) {
+        event.preventDefault();
+        //  console.log('onMouseLeave', hex, event);
+    }
+
+    /**
      * Actions whenever a mouse clicks a tile
      * @param hex
      * @param event
      */
     onClick(hex, event) {
         event.preventDefault();
+
+     //   console.log(this.props.currentPlayer.state.hexagons);
 
         // only do an action on the board if it's their turn to
         if (this.props.currentPlayer.state.canSelectTiles) {
@@ -183,9 +321,8 @@ class GameHelper extends Component {
             // change the highlighted hexes if player selects a tile they own
             if (HexHelper.isHexOwnedBy(hex, playerNumber) && hex.props.text != '1') {
                 // reset the highlighted index based on database (in case of reloading)
-                console.log(this.props.currentPlayer.state.selectedHexIndex);
-                this.props.currentPlayer.state.hexagons[selectedHexIndex] =
-                    this.gameHelper.selectTile(hexIndex, selectedHexIndex, playerNumber);
+          //      console.log(this.props.currentPlayer.state.selectedHexIndex);
+                this.selectTile(hexIndex, selectedHexIndex, playerNumber);
 
                 // update the database
                 if (hexIndex == this.props.currentPlayer.state.selectedHexIndex) {
@@ -194,96 +331,111 @@ class GameHelper extends Component {
                 } else {
                     Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, hexIndex);
                 }
-
-                Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
             }
             // do an action if user has already selected a tile and is now clicking on a tile bordering it (highlighted)
             // (and unowned by the player)
-            else if (this.gameHelper.isHighlighted(hex)) {
-                // create a Dice object
-                let dice = new Dice();
-
+            else if (this.isHighlighted(hex)) {
                 console.log("selected:", selectedHexIndex);
                 let currentHex = this.props.currentPlayer.state.hexagons[selectedHexIndex];
-
-                // do an attack!
-                let armySize = parseInt(currentHex.props.text);
-                let roll = dice.diceRoll(armySize);
-                let sum = roll.reduce(function (a, b) {
-                    return a + b;
-                }, 0);
 
                 // if the selected hex is empty, than just expand to that location
                 if (HexHelper.isHexOwnedBy(hex, -1)) {
                     console.log("Attack successful! Expanding to new territory!");
-                    this.gameHelper.moveUnits(selectedHexIndex, hexIndex, parseInt(currentHex.props.text) - 1);
+                    this.moveUnits(selectedHexIndex, hexIndex, parseInt(currentHex.props.text) - 1);
                 }
                 // if occupied by opponent, then attack!
                 else {
-                    // get attack roll of opponent
-                    let opponentArmySize = parseInt(hex.props.text);
-                    let opponentRoll = dice.diceRoll(opponentArmySize);
-                    let opponentSum = opponentRoll.reduce(function (a, b) {
-                        return a + b;
-                    }, 0);
-
-                    // TODO: a more complicated version of attacking where we compare each dice roll separately
-                    // for now, just compare the sums and do it all-or-nothing style
-                    if (sum > opponentSum) {
-                        // currentPlayer wins the attack!
-                        console.log("Attack successful! Moving units..");
-                        this.gameHelper.moveUnits(selectedHexIndex, hexIndex, armySize - 1);
-                    } else {
-                        console.log("Attack failed...");
-                        // opponent defends successfully!
-                        // reduce selectedHex number down to 1
-                        currentHex.props.text = '1';
-                    }
+                    this.attack(selectedHexIndex, hexIndex);
                 }
-                // clean up of tiles and selections
-                this.gameHelper.unhighlightAll();
 
-                // update database
-                Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
+                // clean up of tiles and selections
+                this.unhighlightAll();
+                // update selectedHexIndex of database
                 Meteor.call('games.setSelectedHexIndex', this.props.id, playerNumber, -1);
             }
+
+            // update hexagons in database
+            Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
         }
     }
     
     render() {
         return (
-            <GameDisplay onClick={this.onClick.bind(this)}
-                         handleClickEndTurn={this.handleClickEndTurn.bind(this)}
-                         currentPlayer={this.props.currentPlayer}
-                         otherPlayer={this.props.otherPlayer} />
+            <div>
+                { this.props.game ?
+                    <GameDisplay
+                        game={this.props.game}
+                        onClick={this.onClick.bind(this)}
+                        boardConfig={this.state.boardConfig}
+                        handleClickEndTurn={this.handleClickEndTurn.bind(this)}
+                        handleClickDelete={this.handleClickDelete.bind(this)}
+                        handleClickLobby={this.handleClickLobby.bind(this)}
+                        currentUser={this.props.currentUser}
+                        currentPlayer={this.props.currentPlayer}
+                        otherPlayer={this.props.otherPlayer}
+                        buttonText={this.props.buttonText}
+                        message={this.props.message} /> :
+                    null
+                }
+            </div>
         );
     }
 }
 
-export default createContainer(({params}) => {
-    const id = params.id;
-    const currentPlayerIndex = params.current;
+GameHelper.propTypes = {
+    id: PropTypes.number,
+    game: PropTypes.object,
+    name: PropTypes.string,
+    currentUser: PropTypes.object, // the current Meteor.user() object
+    currentPlayer: PropTypes.object, // the current user's Player object
+    otherPlayer: PropTypes.object, // the opponent Player object
+    buttonText: PropTypes.string, // the string for the End Turn button
+    message: PropTypes.string, // message that goes on the top of the screen
+};
 
+export default createContainer((props) => {
     if (Meteor.subscribe('games').ready()) {
-        let game = Games.findOne({id: parseInt(id)});
+        let user = Meteor.user();
+        let game = Games.findOne({id: props.id});
         let currentPlayer = null;
         let otherPlayer = null;
+        let buttonText = "End Turn";
+        let message = "";
 
+        // figures out which player is the current player
         if (game != null) {
-            currentPlayer = game.players[currentPlayerIndex];
-            otherPlayer = game.players[1-currentPlayerIndex];
+            if (game.players[0].state.user.username === user.username) {
+                currentPlayer = game.players[0];
+                otherPlayer = game.players[1];
+            } else {
+                currentPlayer = game.players[1];
+                otherPlayer = game.players[0];
+            }
+
+            if (currentPlayer.state.finishedWithTurn) {
+                buttonText = "Waiting...";
+                message = "Please wait for other player.";
+            } else if (otherPlayer.state.finishedWithTurn) {
+                message = "Your opponent is waiting for you!";
+            }
         }
 
         return {
+            game: game,
+            currentUser: user,
             currentPlayer: currentPlayer,
             otherPlayer: otherPlayer,
+            buttonText: buttonText,
+            message: message,
         };
     } else {
         return {
+            game: null,
+            currentUser: Meteor.user(),
             currentPlayer: null,
             otherPlayer: null,
+            buttonText: "End Turn",
+            message: "",
         };
     }
-
-
 }, GameHelper);

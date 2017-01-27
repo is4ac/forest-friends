@@ -19,96 +19,22 @@ class GameDisplay extends Component {
     constructor(props) {
         super(props);
 
-        let boardConfig = {
-            width: 500, height: 500,
-        }
-
-        this.onMouseEnter = this.onMouseEnter.bind(this);
-        this.onMouseLeave = this.onMouseLeave.bind(this);
-        this.onClick = this.onClick.bind(this);
-        this.handleClickDelete = this.handleClickDelete.bind(this);
-        this.handleClickEndTurn = this.handleClickEndTurn.bind(this);
-        this.getCurrentPlayerNumber = this.getCurrentPlayerNumber.bind(this);
-        this.update = this.update.bind(this);
-
-        this.hexHelper = new HexHelper();
-        this.gameHelper = null;
-
         this.state = {
-            config: boardConfig,
-            hexagons: [],
             layout: {},
-            actions: { onMouseEnter: this.onMouseEnter,
-                        onMouseLeave: this.onMouseLeave,
-                        onClick: props.onClick, },
+            actions: {
+                onClick: props.onClick,
+            },
         };
     }
-
-    /*********************************************************************
-     * GameDisplay helper functions
-     *********************************************************************/
     
-    /**
-     * Returns 0 if the currentPlayer is players[0], and 1 otherwise
-     * @returns {number}
-     */
-    getCurrentPlayerNumber() {
-        return this.props.currentPlayer.state.user.username === this.props.game.players[0].state.user.username
-            ? 0 : 1;
-    }
-    
-    /*********************************************************************
-     * GameDisplay actions
-     *********************************************************************/
-
-    /**
-     * Actions whenever a mouse hovers over a tile
-     * @param hex
-     * @param event
-     */
-    onMouseEnter(hex, event) {
-        event.preventDefault();
-     //   console.log('onMouseEnter', hex, event);
-    }
-
-    /**
-     * Actions whenever a mouse leaves a tile
-     * @param hex
-     * @param event
-     */
-    onMouseLeave(hex, event) {
-        event.preventDefault();
-      //  console.log('onMouseLeave', hex, event);
-    }
-
-    
-
-    /*********************************************************************
-     * More general UI things---
-     *********************************************************************/
-
-
-
-    /**
-     * When game state changes, this function is called to update some variables such as GameHelper object
-     */
-    update() {
-        // only create gameHelper if it hasn't already been
-        if (this.gameHelper == null && this.props.game != null) {
-            this.gameHelper = new GameHelper(this.props.currentPlayer, this.props.otherPlayer);
-        }
-    }
-
     /**
      * Actually render the thing!
      */
     render() {
-        let config = this.state.config;
+        let config = this.props.boardConfig;
         let game = this.props.game;
         let layout = null;
         let yourTurn = null;
-
-        this.update();
 
         // create the layout if the database is loaded, and check if it's the currentUser's turn
         if (game != null && this.props.currentUser != null) {
@@ -116,6 +42,8 @@ class GameDisplay extends Component {
             yourTurn = this.props.currentUser.username === this.props.game.currentTurn.state.user.username;
         }
 
+        console.log()
+        
         return (
             <div>
                 { game ?
@@ -149,17 +77,17 @@ class GameDisplay extends Component {
                         </div>
                         <div className="row">
                             <div className="col-sm-4">
-                                <button type="button" className="btn btn-lg btn-success" onClick={this.handleClickEndTurn}>
+                                <button type="button" className="btn btn-lg btn-success" onClick={this.props.handleClickEndTurn}>
                                     {this.props.buttonText}
                                 </button>
                             </div>
                             <div className="col-sm-4">
-                                <button type="button" className="btn btn-lg btn-primary" onClick={this.handleClickLobby}>Back to
+                                <button type="button" className="btn btn-lg btn-primary" onClick={this.props.handleClickLobby}>Back to
                                     lobby
                                 </button>
                             </div>
                             <div className="col-sm-4">
-                                <button type="button" className="btn btn-lg btn-danger" onClick={this.handleClickDelete}>Delete
+                                <button type="button" className="btn btn-lg btn-danger" onClick={this.props.handleClickDelete}>Delete
                                     game
                                 </button>
                             </div>
@@ -174,7 +102,6 @@ class GameDisplay extends Component {
 }
 
 GameDisplay.propTypes = {
-    id: PropTypes.number,
     game: PropTypes.object,
     name: PropTypes.string,
     currentUser: PropTypes.object, // the current Meteor.user() object
@@ -185,51 +112,17 @@ GameDisplay.propTypes = {
 };
 
 export default createContainer((props) => {
-    if (Meteor.subscribe('games').ready()) {
-        let idParam = FlowRouter.getParam('gameid');
-        idParam = parseInt(idParam);
-
-        let user = Meteor.user();
-        let game = Games.findOne({id: idParam});
-        let currentPlayer = null;
-        let otherPlayer = null;
-        let buttonText = "End Turn";
-        let message = "";
-
-        // figures out which player is the current player
-        if (game != null) {
-            if (game.players[0].state.user.username === user.username) {
-                currentPlayer = game.players[0];
-                otherPlayer = game.players[1];
-            } else {
-                currentPlayer = game.players[1];
-                otherPlayer = game.players[0];
-            }
-
-            if (currentPlayer.state.finishedWithTurn) {
-                buttonText = "Waiting...";
-                message = "Please wait for other player.";
-            } else if (otherPlayer.state.finishedWithTurn) {
-                message = "Your opponent is waiting for you!";
-            }
-        }
-
-        return {
-            game: game,
-            currentUser: user,
-            currentPlayer: currentPlayer,
-            otherPlayer: otherPlayer,
-            buttonText: buttonText,
-            message: message,
-        };
-    } else {
-        return {
-            game: null,
-            currentUser: Meteor.user(),
-            currentPlayer: null,
-            otherPlayer: null,
-            buttonText: "End Turn",
-            message: "",
-        };
-    }
+    return {
+        game: props.game,
+        currentUser: props.currentUser,
+        currentPlayer: props.currentPlayer,
+        otherPlayer: props.otherPlayer,
+        buttonText: props.buttonText,
+        message: props.message,
+        boardConfig: props.boardConfig,
+        onClick: props.onClick,
+        handleClickEndTurn: props.handleClickEndTurn,
+        handleClickDelete: props.handleClickDelete,
+        handleClickLobby: props.handleClickLobby,
+    };
 }, GameDisplay);
