@@ -110,7 +110,7 @@
           _react2.default.createElement(
             'pattern',
             { id: id, patternUnits: 'objectBoundingBox', x: 0, y: 0, width: x, height: y },
-            _react2.default.createElement('image', { xlinkHref: hex.props.image, x: 0, y: -1.2, width: x * 2, height: y * 2 })
+            _react2.default.createElement('image', { xlinkHref: hex.props.image, x: 0, y: -1.1, width: x * 2, height: y * 2 })
           )
         );
       }

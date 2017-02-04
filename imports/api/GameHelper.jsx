@@ -11,6 +11,7 @@ import GameDisplay from '../ui/GameDisplay.jsx';
 import { Dice } from './Dice.js';
 import CardsDisplay from '../ui/CardsDisplay.jsx';
 import { GameButtons } from '../ui/GameButtons.jsx';
+import { Messages } from '../ui/Messages.jsx';
 
 class GameHelper extends Component {
     constructor(props) {
@@ -21,7 +22,7 @@ class GameHelper extends Component {
                             width: 500,
                             height: 500,
                          },
-            REINFORCEMENTS: 3, // how many reinforcements each player gets at the end of each turn
+            REINFORCEMENTS: 2, // base number used in calculations for how many reinforcements each player gets
         }
 
         // helper class for hex tile calculations/actions
@@ -130,7 +131,7 @@ class GameHelper extends Component {
         }
 
         // randomly generate indices to reinforce
-        for (let i = 0; i < this.state.REINFORCEMENTS; i++) {
+        for (let i = 0; i < this.state.REINFORCEMENTS + (indexArray.length/2); i++) {
             let randInd = indexArray[Math.floor((Math.random() * indexArray.length))];
             this.addOne(randInd);
         }
@@ -412,12 +413,6 @@ class GameHelper extends Component {
                         hand={this.props.currentPlayer.state.hand}
                         playedCards={this.props.currentPlayer.state.playedCards}
                     />
-                    <GameButtons
-                        handleClickEndTurn={this.handleClickEndTurn.bind(this)}
-                        handleClickDelete={this.handleClickDelete.bind(this)}
-                        handleClickLobby={this.handleClickLobby.bind(this)}
-                        buttonText={this.props.buttonText}
-                    />
                 </div>
             );
         }
@@ -426,6 +421,20 @@ class GameHelper extends Component {
     render() {
         return (
             <div>
+                { this.props.game ?
+                    <Messages
+                        message={this.props.message}
+                        otherPlayer={this.props.otherPlayer}
+                        turn={this.props.yourTurn}
+                    />
+                    : null
+                }
+                <GameButtons
+                    handleClickEndTurn={this.handleClickEndTurn.bind(this)}
+                    handleClickDelete={this.handleClickDelete.bind(this)}
+                    handleClickLobby={this.handleClickLobby.bind(this)}
+                    buttonText={this.props.buttonText}
+                />
                 {this.renderSelection(this.props.game)}
             </div>
         );
@@ -441,6 +450,7 @@ GameHelper.propTypes = {
     otherPlayer: PropTypes.object, // the opponent Player object
     buttonText: PropTypes.string, // the string for the End Turn button
     message: PropTypes.string, // message that goes on the top of the screen
+    yourTurn: PropTypes.bool,
 };
 
 export default createContainer((props) => {
@@ -451,6 +461,7 @@ export default createContainer((props) => {
         let otherPlayer = null;
         let buttonText = "End Turn";
         let message = "";
+        let yourTurn = false;
 
         // figures out which player is the current player
         if (game != null) {
@@ -468,6 +479,8 @@ export default createContainer((props) => {
             } else if (otherPlayer.state.finishedWithTurn) {
                 message = "Your opponent is waiting for you!";
             }
+
+            yourTurn = user.username === game.currentTurn.state.user.username;
         }
 
         return {
@@ -477,6 +490,7 @@ export default createContainer((props) => {
             otherPlayer: otherPlayer,
             buttonText: buttonText,
             message: message,
+            yourTurn: yourTurn,
         };
     } else {
         return {

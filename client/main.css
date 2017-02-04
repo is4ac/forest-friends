@@ -63,20 +63,19 @@ svg g {
 
 svg g:hover text {
   fill-opacity: 1;
-  fill: midnightblue;
+  fill: black;
 }
 
 svg g polygon {
-  stroke: steelblue;
-  stroke-width: 0.2;
+  stroke: black;
+  stroke-width: 0;
   transition: fill-opacity .2s;
 }
 
 svg g text {
   font-size: 0.3em;
   fill: #000;
-  fill-opacity: 0.4;
-  transition: fill-opacity .2s;
+  fill-opacity: 1;
 }
 
 svg path {

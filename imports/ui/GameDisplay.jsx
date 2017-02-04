@@ -30,12 +30,10 @@ class GameDisplay extends Component {
         let config = this.props.boardConfig;
         let game = this.props.game;
         let layout = null;
-        let yourTurn = null;
 
         // create the layout if the database is loaded, and check if it's the currentUser's turn
         if (game != null && this.props.currentUser != null) {
-            layout = new Layout({width: 8, height: 8, flat: true, spacing: 1}, {x: -42, y: -40});
-            yourTurn = this.props.currentUser.username === this.props.game.currentTurn.state.user.username;
+            layout = new Layout({width: 8, height: 8, flat: true, spacing: 0}, {x: -42, y: -40});
         }
 
         console.log()
@@ -44,25 +42,6 @@ class GameDisplay extends Component {
             <div>
                 { game ?
                     <div>
-                        <div className="row">
-                            <div className="col-md-6">
-                                <h4>
-                                {this.props.otherPlayer.state.user ? 'You are playing against ' + this.props.otherPlayer.state.user.username + '.'
-                                    : 'You are currently waiting for another player to play! Please be patient.'}
-                                </h4>
-                            </div>
-                            <div className="col-md-6">
-                                <div className="message">
-                                {this.props.message}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="row">
-                            <div className="col-md-6">
-                                {yourTurn ? <div>It is currently <b>your</b> turn.</div> :
-                                    <div>It is your turn to <b>choose cards.</b></div>}
-                            </div>
-                        </div>
                         <div className="row">
                             {this.props.game ? <HexGrid width={config.width}
                                                         height={config.height}
