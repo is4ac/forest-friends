@@ -28,7 +28,7 @@ class CardComponent extends Component {
     render() {
         return (
             <div className="row">
-                <div className="col-md-4">
+                <div className="col-md-12">
                     <table style={{width: 'auto'}} className="table table-bordered table-condensed table-hover">
                         <thead>
                         </thead>

@@ -33,7 +33,7 @@ class PlayedCardsView extends Component {
         return (
             <div>
                 <div className="row">
-                    <div className="col-md-4">
+                    <div className="col-md-12">
                         <button type="button" className="btn btn-primary" onClick={this.handleClick.bind(this)}>
                             Play a new card
                         </button>

@@ -43,12 +43,14 @@ class GameDisplay extends Component {
                 { game ?
                     <div>
                         <div className="row">
-                            {this.props.game ? <HexGrid width={config.width}
-                                                        height={config.height}
-                                                        hexagons={this.props.currentPlayer.state.hexagons}
-                                                        layout={layout}
-                                                        actions={this.state.actions} />
-                                            : null}
+                            <div className="col-md-12">
+                                {this.props.game ? <HexGrid width={config.width}
+                                                            height={config.height}
+                                                            hexagons={this.props.currentPlayer.state.hexagons}
+                                                            layout={layout}
+                                                            actions={this.state.actions} />
+                                                : null}
+                            </div>
                         </div>
                     </div>
                     :

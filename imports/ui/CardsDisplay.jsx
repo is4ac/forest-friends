@@ -19,10 +19,26 @@ class CardsDisplay extends Component {
     render() {
         return (
             <div>
-                Cards in hand:<br/>
-                <CardsList cards={this.props.hand} /><br/>
-                Cards in play:<br/>
-                <PlayedCardsView cards={this.props.playedCards} /><br/>
+                <div className="row">
+                    <div className="col-md-12">
+                        Cards in hand:<br/>
+                    </div>
+                </div>
+                <div className="row">
+                    <div className="col-md-12">
+                        <CardsList cards={this.props.hand} /><br/>
+                    </div>
+                </div>
+                <div className="row">
+                    <div className="col-md-12">
+                        Cards in play:<br/>
+                    </div>
+                </div>
+                <div className="row">
+                    <div className="col-md-12">
+                        <PlayedCardsView cards={this.props.playedCards} /><br/>
+                    </div>
+                </div>
             </div>
         );
     }

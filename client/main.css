@@ -4,11 +4,16 @@
   display: block;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   margin: 0;
   padding: 0em;
   font-family: sans-serif;
   background: #e1e1e1;
+  height: 100%;
 }
 
 div[class*="col-"] {
@@ -85,4 +90,13 @@ svg path {
   stroke-opacity: 0.3;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+#blocklyArea {
+  height: 99%;
+}
+
+#blocklyAreaTable {
+  height: 100%;
+  width: 100%;
 }

@@ -31,18 +31,26 @@ MainLayout = React.createClass({
         return (
             <div className="container">
                 <div className="row">
-                    <div className="col-sm-3">
-                        { this.props.userId ?
+                    <center>
+                        <div className="col-sm-12"><h3>Welcome to Forest Friends
+                        {this.props.user ? ', '+this.props.user.username : null}!</h3></div>
+                    </center>
+                </div>
+                <div className="row">
+                    <center>
+                        <div className="col-sm-12">
+                        {this.props.user ?
                             <button type="button" className="btn btn-primary" onClick={this.handleClickLogout}>Log Out</button> :
                             <button type="button" className="btn btn-primary" onClick={this.handleClickLogin}>Log In / Sign Up</button>}
-                    </div>
-                    <div className="col-sm-6">Welcome to Forest Friends
-                        {this.props.user ? ', '+this.props.user.username : null}!</div>
+                        </div>
+                    </center>
                 </div>
                 <br/>
                 <div className="row">
                     <div className="col-md-12">
-                        {this.props.content}
+                        <center>
+                            {this.props.content}
+                        </center>
                     </div>
                 </div>
                 <br/>
@@ -58,7 +66,9 @@ MainLayout = React.createClass({
 });
 
 export default MainLayoutContainer = createContainer(() => {
+    let user = Meteor.user();
+
     return {
-        user: Meteor.user(),
+        user: user,
     };
 }, MainLayout);
