@@ -122,7 +122,7 @@
           'svg',
           { className: 'grid', width: this.props.width, height: this.props.height, viewBox: '-50 -50 100 100', version: '1.1', xmlns: 'http://www.w3.org/2000/svg' },
           this.props.hexagons.map(function (hex, index) {
-            return _react2.default.createElement(_HexShape2.default, { key: index, hex: hex, layout: _this2.props.layout, actions: _this2.props.actions });
+            return _react2.default.createElement(_HexShape2.default, { className: 'hex', key: index, hex: hex, layout: _this2.props.layout, actions: _this2.props.actions });
           }),
           _react2.default.createElement(_Path2.default, _extends({}, this.props.path, { layout: this.props.layout }))
         );

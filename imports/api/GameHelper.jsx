@@ -18,6 +18,8 @@ class GameHelper extends Component {
         super(props);
 
         this.state = {
+            blocklyLoaded: false,
+            workspace: null,
             boardConfig: {
                             width: 500,
                             height: 500,
@@ -46,6 +48,7 @@ class GameHelper extends Component {
         this.attack = this.attack.bind(this);
         this.reinforce = this.reinforce.bind(this);
         this.addOne = this.addOne.bind(this);
+        this.onClickCodeGeneration = this.onClickCodeGeneration.bind(this);
         this.renderSelection = this.renderSelection.bind(this);
     }
 
@@ -397,78 +400,305 @@ class GameHelper extends Component {
         }
     }
 
-    componentDidMount() {
-        if (this.props.game) {
-            var blocklyArea = document.getElementById('blocklyArea');
-            var blocklyDiv = document.getElementById('blocklyDiv');
+    onClickCodeGeneration(event) {
+        event.preventDefault();
 
-            var workspace = Blockly.inject(blocklyDiv,
-                {toolbox: document.getElementById('toolbox')});
-
-            /*
-            var onresize = function(e) {
-                // Compute the absolute coordinates and dimensions of blocklyArea.
-                var element = blocklyArea;
-                var x = 0;
-                var y = 0;
-                do {
-                    x += element.offsetLeft;
-                    y += element.offsetTop;
-                    element = element.offsetParent;
-                } while (element);
-                // Position blocklyDiv over blocklyArea.
-                blocklyDiv.style.left = x + 'px';
-                blocklyDiv.style.top = y + 'px';
-                blocklyDiv.style.width = blocklyArea.offsetWidth + 'px';
-                blocklyDiv.style.height = blocklyArea.offsetHeight + 'px';
-            };
-            window.addEventListener('resize', onresize, false);
-            onresize();
-            Blockly.svgResize(workspace);
-            */
-        }
+        var code = Blockly.JavaScript.workspaceToCode(this.state.workspace);
+        console.log(code);
     }
 
+
     componentDidUpdate() {
-        if (this.props.game) {
+        if (this.props.game && !this.state.blocklyLoaded) {
             console.log('mounted');
 
             var blocklyArea = document.getElementById('blocklyArea');
             var blocklyDiv = document.getElementById('blocklyDiv');
-            var workspace = Blockly.inject(blocklyDiv,
-                {toolbox: document.getElementById('toolbox')});
 
             /*
-            var onresize = function(e) {
-                // Compute the absolute coordinates and dimensions of blocklyArea.
-                var element = blocklyArea;
-                var x = 0;
-                var y = 0;
-                do {
-                    x += element.offsetLeft;
-                    y += element.offsetTop;
-                    element = element.offsetParent;
-                } while (element);
-
-                console.log(x, y);
-
-                // Position blocklyDiv over blocklyArea.
-                blocklyDiv.style.left = x + 'px';
-                blocklyDiv.style.top = y + 'px';
-                blocklyDiv.style.width = blocklyArea.offsetWidth + 'px';
-                blocklyDiv.style.height = blocklyArea.offsetHeight + 'px';
-
-                console.log(blocklyDiv.style.left);
-                console.log(blocklyDiv.style.width);
-                console.log(blocklyDiv.style.height);
-                console.log(blocklyArea.offsetHeight);
-                console.log(blocklyArea.offsetWidth);
-            };
-            window.addEventListener('resize', onresize, false);
-            onresize();
-            Blockly.svgResize(workspace);
-
+            * Custom Blockly blocks!
             */
+            // custom if statement
+            Blockly.Blocks['controls_if_custom'] = {
+                /**
+                 * Block for if/elseif/else condition.
+                 * @this Blockly.Block
+                 */
+                init: function() {
+                    this.setHelpUrl(Blockly.Msg.CONTROLS_IF_HELPURL);
+                    this.setColour(Blockly.Blocks.logic.HUE);
+                    this.appendValueInput('IF0')
+                        .setCheck('Boolean')
+                        .appendField(Blockly.Msg.CONTROLS_IF_MSG_IF);
+                    this.appendStatementInput('DO0')
+                        .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
+                    this.setPreviousStatement(true);
+                    this.setNextStatement(true);
+                    this.setMutator(new Blockly.Mutator(['controls_if_elseif',
+                        'controls_if_else']));
+                    // Assign 'this' to a variable for use in the tooltip closure below.
+                    var thisBlock = this;
+                    this.setTooltip(function() {
+                        if (!thisBlock.elseifCount_ && !thisBlock.elseCount_) {
+                            return Blockly.Msg.CONTROLS_IF_TOOLTIP_1;
+                        } else if (!thisBlock.elseifCount_ && thisBlock.elseCount_) {
+                            return Blockly.Msg.CONTROLS_IF_TOOLTIP_2;
+                        } else if (thisBlock.elseifCount_ && !thisBlock.elseCount_) {
+                            return Blockly.Msg.CONTROLS_IF_TOOLTIP_3;
+                        } else if (thisBlock.elseifCount_ && thisBlock.elseCount_) {
+                            return Blockly.Msg.CONTROLS_IF_TOOLTIP_4;
+                        }
+                        return '';
+                    });
+                    this.elseifCount_ = 0;
+                    this.elseCount_ = 0;
+                },
+                /**
+                 * Create XML to represent the number of else-if and else inputs.
+                 * @return {Element} XML storage element.
+                 * @this Blockly.Block
+                 */
+                mutationToDom: function() {
+                    if (!this.elseifCount_ && !this.elseCount_) {
+                        return null;
+                    }
+                    var container = document.createElement('mutation');
+                    if (this.elseifCount_) {
+                        container.setAttribute('elseif', this.elseifCount_);
+                    }
+                    if (this.elseCount_) {
+                        container.setAttribute('else', 1);
+                    }
+                    return container;
+                },
+                /**
+                 * Parse XML to restore the else-if and else inputs.
+                 * @param {!Element} xmlElement XML storage element.
+                 * @this Blockly.Block
+                 */
+                domToMutation: function(xmlElement) {
+                    this.elseifCount_ = parseInt(xmlElement.getAttribute('elseif'), 10) || 0;
+                    this.elseCount_ = parseInt(xmlElement.getAttribute('else'), 10) || 0;
+                    this.updateShape_();
+                },
+                /**
+                 * Populate the mutator's dialog with this block's components.
+                 * @param {!Blockly.Workspace} workspace Mutator's workspace.
+                 * @return {!Blockly.Block} Root block in mutator.
+                 * @this Blockly.Block
+                 */
+                decompose: function(workspace) {
+                    var containerBlock = workspace.newBlock('controls_if_if');
+                    containerBlock.initSvg();
+                    var connection = containerBlock.nextConnection;
+                    for (var i = 1; i <= this.elseifCount_; i++) {
+                        var elseifBlock = workspace.newBlock('controls_if_elseif');
+                        elseifBlock.initSvg();
+                        connection.connect(elseifBlock.previousConnection);
+                        connection = elseifBlock.nextConnection;
+                    }
+                    if (this.elseCount_) {
+                        var elseBlock = workspace.newBlock('controls_if_else');
+                        elseBlock.initSvg();
+                        connection.connect(elseBlock.previousConnection);
+                    }
+                    return containerBlock;
+                },
+                /**
+                 * Reconfigure this block based on the mutator dialog's components.
+                 * @param {!Blockly.Block} containerBlock Root block in mutator.
+                 * @this Blockly.Block
+                 */
+                compose: function(containerBlock) {
+                    var clauseBlock = containerBlock.nextConnection.targetBlock();
+                    // Count number of inputs.
+                    this.elseifCount_ = 0;
+                    this.elseCount_ = 0;
+                    var valueConnections = [null];
+                    var statementConnections = [null];
+                    var elseStatementConnection = null;
+                    while (clauseBlock) {
+                        switch (clauseBlock.type) {
+                            case 'controls_if_elseif':
+                                this.elseifCount_++;
+                                valueConnections.push(clauseBlock.valueConnection_);
+                                statementConnections.push(clauseBlock.statementConnection_);
+                                break;
+                            case 'controls_if_else':
+                                this.elseCount_++;
+                                elseStatementConnection = clauseBlock.statementConnection_;
+                                break;
+                            default:
+                                throw 'Unknown block type.';
+                        }
+                        clauseBlock = clauseBlock.nextConnection &&
+                            clauseBlock.nextConnection.targetBlock();
+                    }
+                    this.updateShape_();
+                    // Reconnect any child blocks.
+                    for (var i = 1; i <= this.elseifCount_; i++) {
+                        Blockly.Mutator.reconnect(valueConnections[i], this, 'IF' + i);
+                        Blockly.Mutator.reconnect(statementConnections[i], this, 'DO' + i);
+                    }
+                    Blockly.Mutator.reconnect(elseStatementConnection, this, 'ELSE');
+                },
+                /**
+                 * Store pointers to any connected child blocks.
+                 * @param {!Blockly.Block} containerBlock Root block in mutator.
+                 * @this Blockly.Block
+                 */
+                saveConnections: function(containerBlock) {
+                    var clauseBlock = containerBlock.nextConnection.targetBlock();
+                    var i = 1;
+                    while (clauseBlock) {
+                        switch (clauseBlock.type) {
+                            case 'controls_if_elseif':
+                                var inputIf = this.getInput('IF' + i);
+                                var inputDo = this.getInput('DO' + i);
+                                clauseBlock.valueConnection_ =
+                                    inputIf && inputIf.connection.targetConnection;
+                                clauseBlock.statementConnection_ =
+                                    inputDo && inputDo.connection.targetConnection;
+                                i++;
+                                break;
+                            case 'controls_if_else':
+                                var inputDo = this.getInput('ELSE');
+                                clauseBlock.statementConnection_ =
+                                    inputDo && inputDo.connection.targetConnection;
+                                break;
+                            default:
+                                throw 'Unknown block type.';
+                        }
+                        clauseBlock = clauseBlock.nextConnection &&
+                            clauseBlock.nextConnection.targetBlock();
+                    }
+                },
+                /**
+                 * Modify this block to have the correct number of inputs.
+                 * @private
+                 * @this Blockly.Block
+                 */
+                updateShape_: function() {
+                    // Delete everything.
+                    if (this.getInput('ELSE')) {
+                        this.removeInput('ELSE');
+                    }
+                    var i = 1;
+                    while (this.getInput('IF' + i)) {
+                        this.removeInput('IF' + i);
+                        this.removeInput('DO' + i);
+                        i++;
+                    }
+                    // Rebuild block.
+                    for (var i = 1; i <= this.elseifCount_; i++) {
+                        this.appendValueInput('IF' + i)
+                            .setCheck('Boolean')
+                            .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSEIF);
+                        this.appendStatementInput('DO' + i)
+                            .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
+                    }
+                    if (this.elseCount_) {
+                        this.appendStatementInput('ELSE')
+                            .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSE);
+                    }
+                }
+            };
+
+            Blockly.Blocks['attack'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("Attack");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(0);
+                    this.setTooltip('');
+                    this.setHelpUrl('');
+                }
+            };
+
+            Blockly.Blocks['move'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("Move")
+                        .appendField(new Blockly.FieldDropdown([["\u2191", "N"], ["\u2197","NE"], ["\u2196","NW"],
+                            ["\u2193","S"], ["\u2198", "SE"], ["\u2199", "SW"]]), "DIRECTION");
+                    this.setInputsInline(true);
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(150);
+                    this.setTooltip('');
+                    this.setHelpUrl('');
+                }
+            };
+
+            Blockly.Blocks['my_bobcats'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("my bobcats")
+                        .appendField(new Blockly.FieldDropdown([["=","equals"], ["\u2260","not_equals"], ["<","less"], ["\u2264","less_equals"], [">","greater"], ["\u2265","greater_equals"]]), "COMPARISON");
+                    this.appendValueInput("NUMBER")
+                        .setCheck("Number");
+                    this.setInputsInline(true);
+                    this.setOutput(true, "Boolean");
+                    this.setColour(120);
+                    this.setTooltip('');
+                    this.setHelpUrl('');
+                }
+            };
+
+            Blockly.Blocks['bordering_animal'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("other")
+                        .appendField(new Blockly.FieldDropdown([["owls","owls"], ["skunks","skunks"], ["bobcats","bobcats"]]), "ANIMAL")
+                        .appendField(new Blockly.FieldDropdown([["=","equals"], ["\u2260","not_equals"], ["<","less"], ["\u2264","less_equals"], [">","greater"], ["\u2265","greater_equals"]]), "COMPARISON");
+                    this.appendValueInput("NUMBER")
+                        .setCheck("Number");
+                    this.setInputsInline(true);
+                    this.setOutput(true, "Boolean");
+                    this.setColour(120);
+                    this.setTooltip('');
+                    this.setHelpUrl('');
+                }
+            };
+
+            // Code generation
+            Blockly.JavaScript['attack'] = function(block) {
+                // TODO: Assemble JavaScript into code variable.
+                var code = 'attack;\n';
+                return code;
+            };
+
+            Blockly.JavaScript['move'] = function(block) {
+                var dropdown_direction = block.getFieldValue('DIRECTION');
+                // TODO: Assemble JavaScript into code variable.
+                var code = 'move;\n';
+                return code;
+            };
+
+            Blockly.JavaScript['my_bobcats'] = function(block) {
+                var dropdown_comparison = block.getFieldValue('COMPARISON');
+                var value_number = Blockly.JavaScript.valueToCode(block, 'NUMBER', Blockly.JavaScript.ORDER_ATOMIC);
+                // TODO: Assemble JavaScript into code variable.
+                var code = 'bobcats_true/false';
+                // TODO: Change ORDER_NONE to the correct strength.
+                return [code, Blockly.JavaScript.ORDER_NONE];
+            };
+
+            Blockly.JavaScript['bordering_animal'] = function(block) {
+                var dropdown_animal = block.getFieldValue('ANIMAL');
+                var dropdown_comparison = block.getFieldValue('COMPARISON');
+                var value_number = Blockly.JavaScript.valueToCode(block, 'NUMBER', Blockly.JavaScript.ORDER_ATOMIC);
+                // TODO: Assemble JavaScript into code variable.
+                var code = 'animal_true/false';
+                // TODO: Change ORDER_NONE to the correct strength.
+                return [code, Blockly.JavaScript.ORDER_NONE];
+            };
+
+            let workspace = Blockly.inject(blocklyDiv,
+                {toolbox: document.getElementById('toolbox'), css: true});
+
+            this.setState({workspace: workspace, blocklyLoaded: true});
         }
     }
 
@@ -478,12 +708,11 @@ class GameHelper extends Component {
                 <div>
                     <xml id="toolbox" style={{display: "none"}}>
                         <block type="controls_if"></block>
-                        <block type="controls_repeat_ext"></block>
-                        <block type="logic_compare"></block>
                         <block type="math_number"></block>
-                        <block type="math_arithmetic"></block>
-                        <block type="text"></block>
-                        <block type="text_print"></block>
+                        <block type="attack"></block>
+                        <block type="move"></block>
+                        <block type="my_bobcats"></block>
+                        <block type="bordering_animal"></block>
                     </xml>
 
                     <GameDisplay
@@ -506,15 +735,20 @@ class GameHelper extends Component {
 
                     <div id="blocklyDiv" style={{height: "480px", width: "600px"}}></div>
 
-                    <CardsDisplay
-                        hand={this.props.currentPlayer.state.hand}
-                        playedCards={this.props.currentPlayer.state.playedCards}
-                    />
+                    <button type="button" className="btn btn-lg btn-success" onClick={this.onClickCodeGeneration}>Play Cards</button>
+
                 </div>
             );
         }
     }
-    
+
+    /**
+     *
+     <CardsDisplay
+     hand={this.props.currentPlayer.state.hand}
+     playedCards={this.props.currentPlayer.state.playedCards}
+     />
+     */
     render() {
         return (
             <div>

@@ -58,32 +58,27 @@ li {
   border-bottom: #eee solid 1px;
 }
 
-svg {
+.grid svg {
 
 }
-svg g {
+.grid svg g {
   fill: #3F51B5;
   fill-opacity: 1;
 }
 
-svg g:hover text {
-  fill-opacity: 1;
-  fill: black;
-}
-
-svg g polygon {
+.hex svg g polygon {
   stroke: black;
   stroke-width: 0;
   transition: fill-opacity .2s;
 }
 
-svg g text {
+.hex svg g text {
   font-size: 0.3em;
   fill: #000;
   fill-opacity: 1;
 }
 
-svg path {
+.hex svg path {
   fill: none;
   stroke: hsl(60, 20%, 70%);
   stroke-width: 0.4em;
