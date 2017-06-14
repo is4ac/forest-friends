@@ -233,13 +233,14 @@ class HexHelper {
 
         HexHelper.setHexagon(hexagons, 1, 14, 'owl', 3);
         HexHelper.setHexagon(hexagons, 1, 7, 'skunk', 3);
-        HexHelper.setHexagon(hexagons, 1, 8, 'cat', 3);
+        HexHelper.setHexagon(hexagons, 1, 8, 'cat', 10);
 
         // Player 2 units
         HexHelper.setHexagon(hexagons, 2, 26, 'owl', 3);
         HexHelper.setHexagon(hexagons, 2, 32, 'skunk', 3);
         HexHelper.setHexagon(hexagons, 2, 31, 'cat', 3);
 
+        /*
         // AI 1 units (ally of P1)
         HexHelper.setHexagon(hexagons, 3, 16, 'owl', 3);
         HexHelper.setHexagon(hexagons, 3, 9, 'skunk', 3);
@@ -249,6 +250,8 @@ class HexHelper {
         HexHelper.setHexagon(hexagons, 4, 28, 'owl', 3);
         HexHelper.setHexagon(hexagons, 4, 34, 'skunk', 3);
         HexHelper.setHexagon(hexagons, 4, 33, 'cat', 3);
+        */
+
         return hexagons;
     }
 

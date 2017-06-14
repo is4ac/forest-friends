@@ -187,7 +187,9 @@ class GameHelper extends Component {
      * @param hex
      */
     highlightHex(hex) {
-        hex.props.image = hex.props.image.slice(0, -4) + '_highlight.png';
+        if (!this.isHighlighted(hex)) {
+            hex.props.image = hex.props.image.slice(0, -4) + '_highlight.png';
+        }
     }
 
     /**
@@ -195,7 +197,9 @@ class GameHelper extends Component {
      * @param hex
      */
     unhighlightHex(hex) {
-        hex.props.image = hex.props.image.slice(0,-14) + '.png';
+        if (this.isHighlighted(hex)) {
+            hex.props.image = hex.props.image.slice(0, -14) + '.png';
+        }
     }
 
     /**
@@ -203,9 +207,7 @@ class GameHelper extends Component {
      */
     unhighlightAll() {
         this.props.currentPlayer.state.hexagons.forEach(function (hex) {
-            let ending = hex.props.image.slice(-8);
-
-            if (ending === 'ight.png') {
+            if (this.isHighlighted(hex)) {
                 this.unhighlightHex(hex);
             }
         }, this);
@@ -215,9 +217,7 @@ class GameHelper extends Component {
         this.unhighlightAll();
 
         this.props.otherPlayer.state.hexagons.forEach(function (hex) {
-            let ending = hex.props.image.slice(-8);
-
-            if (ending === 'ight.png') {
+            if (this.isHighlighted(hex)) {
                 this.unhighlightHex(hex);
             }
         }, this);
@@ -263,15 +263,20 @@ class GameHelper extends Component {
 
         let fromNum = parseInt(fromHex.props.text);
 
-        if (amount == 'all') {
-            fromHex.props.text = '1';
-            toHex.props.text = (fromNum - 1) + '';
-        } else {
-            fromHex.props.text = (fromNum - amount) + '';
-            toHex.props.text = amount + '';
-        }
+        // check that there are enough units to move
+        if (fromNum > 1) {
+            // amount can be an option 'all' which moves all units but one
+            if (amount == 'all') {
+                fromHex.props.text = '1';
+                toHex.props.text = (fromNum - 1) + '';
+            } else {
+                fromHex.props.text = (fromNum - amount) + '';
+                toHex.props.text = amount + '';
+            }
 
-        toHex.props.image = fromHex.props.image;
+            toHex.props.image = fromHex.props.image;
+            this.unhighlightHex(toHex);
+        }
     }
 
     /**
@@ -451,14 +456,17 @@ class GameHelper extends Component {
             // make sure tile is empty
             if (HexHelper.isHexOwnedBy(this.props.currentPlayer.state.hexagons[toIndex], -1)) {
                 console.log('move is being called! toIndex: ' + toIndex);
-                this.highlightCurrentBobcat();
 
                 this.moveUnits(this.state.currentBobcatIndex,
                     toIndex, 'all');
 
                 this.updateHexagonsDatabase();
             }
+
+            return toIndex;
         }
+
+        return -1;
     }
 
     evalInContext(js, context) {
@@ -472,8 +480,6 @@ class GameHelper extends Component {
     onClickCodeGeneration(event) {
         event.preventDefault();
 
-        this.setState({codeRunning: true});
-
         // generate the code
         Blockly.JavaScript.addReservedWords('code', 'event');
         var code = Blockly.JavaScript.workspaceToCode(this.state.workspace);
@@ -486,17 +492,20 @@ class GameHelper extends Component {
             // loop through each bobcat index I own, and run the generated code once for each bobcat tile
             for (let i = 0; i < bobcatIndices.length; i++) {
                 setTimeout( function() {
+                    this.setState({codeRunning: true});
+
                     console.log('calling on: ' + bobcatIndices[i]);
                     this.setState({currentBobcatIndex: bobcatIndices[i]});
+                    this.highlightCurrentBobcat();
                     this.evalInContext(code, {context: this});
+
+                    this.setState({codeRunning: false});
                 }.bind(this), i*500);
             }
 
         } catch (e) {
             alert(e);
         }
-
-        setTimeout(function() { this.setState({codeRunning: false}); }.bind(this), 500);
     }
 
     /**
@@ -645,7 +654,7 @@ class GameHelper extends Component {
 
             Blockly.JavaScript['attack'] = function(block) {
                 // must have timeout function to match the pause in move code generation
-                var code = 'setTimeout(function() { document.getElementById("attackButton").click(); }, 100);\n';
+                var code = '\n';
 
                 return code;
             }.bind(this);
@@ -653,20 +662,24 @@ class GameHelper extends Component {
             Blockly.JavaScript['move'] = function(block) {
                 var dropdown_direction = block.getFieldValue('DIRECTION');
 
-            //    console.log(dropdown_direction);
-
-                var code = 'document.getElementById("moveDirection").value = "' + dropdown_direction + '"\n';
-                code += 'var event = new Event("input", { bubbles: true });\n'
-                code += 'document.getElementById("moveDirection").dispatchEvent(event);\n';
+                var code = 'if (true) {\n';
+                code += 'let newIndex = this.context.moveCurrentBobcat("' + dropdown_direction + '");\n';
+                code += 'if (newIndex >= 0) {\n';
+                code += 'this.context.setState({currentBobcatIndex: newIndex});\n';
+                code += '}\n';
+                code += '}\n';
 
                 // wait for event to trigger completely
-                code += 'setTimeout(function() { document.getElementById("moveButton").click(); }, 100);\n';
+                //code += 'setTimeout(function() { document.getElementById("moveButton").click(); }, 100);\n';
                 return code;
             }.bind(this);
 
             Blockly.JavaScript['my_bobcats'] = function(block) {
                 var dropdown_comparison = block.getFieldValue('COMPARISON');
                 var value_number = Blockly.JavaScript.valueToCode(block, 'NUMBER', Blockly.JavaScript.ORDER_ATOMIC);
+
+                console.log('dropdown: ' + dropdown_comparison);
+                console.log(value_number);
 
                 var code = 'bobcats_true/false';
 
