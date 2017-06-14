@@ -10,6 +10,7 @@ class HexHelper {
         this.config = {
             mapWidth: 7,
             mapHeight: 6,
+            AI_ANIMAL: 'cat'
         };
     }
 
@@ -23,12 +24,89 @@ class HexHelper {
     }
 
     /**
-     * Returns true if the hex is bordering the hex at selectedIndex
-     * @param hex
-     * @param selectedIndex
+     * Returns an array containing all of the indices of the player's bobcat tiles
+     * @param hexes an array of all the hex objects
+     * @param player the player number (0 or 1)
      */
-    isBordering(hex, selectedIndex) {
-        let borderIndex = this.convertHexToArrayIndex(hex);
+    getMyBobcatIndices(hexes, player) {
+        let bobcatIndices = [];
+
+        for (let i = 0; i < hexes.length; ++i) {
+            if (HexHelper.isHexOwnedBy(hexes[i], player) && HexHelper.getAnimal(hexes[i]) == this.config.AI_ANIMAL) {
+                bobcatIndices.push(this.convertHexToArrayIndex(hexes[i]));
+            }
+        }
+
+        return bobcatIndices;
+    }
+
+    /**
+     * Returns the index of the hex tile that is adjacent in the direction given
+     * @param thisIndex the index of the hex you have selected
+     * @param direction the direction of the adjacent tile you want. possible values: 'N', 'NE', 'NW', 'S', 'SE', 'SW'
+     */
+    getAdjacentHexIndex(thisIndex, direction) {
+        if (direction == 'N') {
+            if (thisIndex % 6 != 0) {
+                return thisIndex - 1;
+            }
+        } else if (direction == 'S') {
+            if ((thisIndex+1) % 6 != 0) {
+                return thisIndex + 1;
+            }
+        } else if (direction == 'NE') {
+            if (thisIndex < 36 && thisIndex != 0 && thisIndex != 12 && thisIndex != 24) {
+                if (thisIndex < 6 || (thisIndex > 11 && thisIndex < 18) || (thisIndex > 23 && thisIndex < 30)) {
+                    return thisIndex + 5;
+                } else {
+                    return thisIndex + 6;
+                }
+            }
+        } else if (direction == 'NW') {
+            if (thisIndex >= 6 && thisIndex != 12 && thisIndex != 24 && thisIndex != 36) {
+                if (thisIndex > 36 || (thisIndex > 11 && thisIndex < 18) || (thisIndex > 23 && thisIndex < 30)) {
+                    return thisIndex - 7;
+                } else {
+                    return thisIndex - 6;
+                }
+            }
+        } else if (direction == 'SE') {
+            if (thisIndex < 36 && thisIndex != 11 && thisIndex != 23 && thisIndex != 35) {
+                if (thisIndex < 6 || (thisIndex > 11 && thisIndex < 18) || (thisIndex > 23 && thisIndex < 30)) {
+                    return thisIndex + 6;
+                } else {
+                    return thisIndex + 7;
+                }
+            }
+        } else if (direction == 'SW') {
+            if (thisIndex >= 6 && thisIndex != 11 && thisIndex != 23 && thisIndex != 35) {
+                if (thisIndex >= 36 || (thisIndex > 11 && thisIndex < 18) || (thisIndex > 23 && thisIndex < 30)) {
+                    return thisIndex - 6;
+                } else {
+                    return thisIndex - 5;
+                }
+            }
+        }
+
+        // no adjacent tile at given index and direction
+        return false;
+    }
+
+    /**
+     * Returns true if the hex is bordering the hex at selectedIndex
+     * @param hex hex object or index value (based on array)
+     * @param selectedIndex array index
+     * @param opts any of the possible: { 'hexIsObject': true, 'hexIsIndex': true }
+     */
+    isBordering(hex, selectedIndex, opts) {
+        // initialize borderIndex based on if hex is an object or an index value
+        let borderIndex = -1;
+        if (opts['hexIsObject']) {
+            borderIndex = this.convertHexToArrayIndex(hex);
+        } else if (opts['hexIsIndex']) {
+            borderIndex = hex;
+        }
+
         let bordering = false;
 
         // check above (if there is an above)

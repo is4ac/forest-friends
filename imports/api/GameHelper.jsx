@@ -20,6 +20,11 @@ class GameHelper extends Component {
         this.state = {
             blocklyLoaded: false,
             workspace: null,
+            myAmount: '',
+            theirAmount: '',
+            moveDirection: '',
+            codeRunning: false,
+            currentBobcatIndex: -1, // used during generated code evals
             boardConfig: {
                             width: 500,
                             height: 500,
@@ -30,7 +35,7 @@ class GameHelper extends Component {
         // helper class for hex tile calculations/actions
         this.hexHelper = new HexHelper();
 
-        // all the function bindings so they can access props
+        // all the function bindings so they can access props and state
         this.onMouseEnter = this.onMouseEnter.bind(this);
         this.onMouseLeave = this.onMouseLeave.bind(this);
         this.onClick = this.onClick.bind(this);
@@ -48,8 +53,19 @@ class GameHelper extends Component {
         this.attack = this.attack.bind(this);
         this.reinforce = this.reinforce.bind(this);
         this.addOne = this.addOne.bind(this);
+        this.updateHexagonsDatabase = this.updateHexagonsDatabase.bind(this);
         this.onClickCodeGeneration = this.onClickCodeGeneration.bind(this);
         this.renderSelection = this.renderSelection.bind(this);
+        this.handleChangeMyAmount = this.handleChangeMyAmount.bind(this);
+        this.handleChangeTheirAmount = this.handleChangeTheirAmount.bind(this);
+        this.handleChangeMyAmount = this.handleChangeMyAmount.bind(this);
+        this.onClickAnimalType = this.onClickAnimalType.bind(this);
+        this.onClickMove = this.onClickMove.bind(this);
+        this.onClickAttack = this.onClickAttack.bind(this);
+        this.handleChangeMoveDirection = this.handleChangeMoveDirection.bind(this);
+        this.evalInContext = this.evalInContext.bind(this);
+        this.moveCurrentBobcat = this.moveCurrentBobcat.bind(this);
+        this.highlightCurrentBobcat = this.highlightCurrentBobcat.bind(this);
     }
 
     /**
@@ -153,6 +169,20 @@ class GameHelper extends Component {
     }
 
     /**
+     *
+     * @param index
+     */
+    highlightCurrentBobcat() {
+        if (this.state.currentBobcatIndex >= 0) {
+            console.log('highlighting bobcat...' + this.state.currentBobcatIndex);
+            this.unhighlightAll();
+            this.highlightHex(this.props.currentPlayer.state.hexagons[this.state.currentBobcatIndex]);
+            this.updateHexagonsDatabase();
+            Meteor.call('games.setSelectedHexIndex', this.props.id, this.getCurrentPlayerNumber(), this.state.currentBobcatIndex);
+        }
+    }
+
+    /**
      * Highlight a hex tile image
      * @param hex
      */
@@ -212,7 +242,7 @@ class GameHelper extends Component {
             this.props.currentPlayer.state.hexagons.forEach(function (hex) {
                 let playerAlly = playerNum+2;
 
-                if (this.hexHelper.isBordering(hex, index) &&
+                if (this.hexHelper.isBordering(hex, index, { 'hexIsObject': true }) &&
                     !HexHelper.isHexOwnedBy(hex, playerNum) &&
                     !HexHelper.isHexOwnedBy(hex, playerAlly)) {
                     this.highlightHex(hex);
@@ -225,16 +255,22 @@ class GameHelper extends Component {
      *
      * @param fromIndex
      * @param toIndex
-     * @param amount
+     * @param amount either the number of units to move or the string 'all' which moves all but one
      */
     moveUnits(fromIndex, toIndex, amount) {
         let fromHex = this.props.currentPlayer.state.hexagons[fromIndex];
         let toHex = this.props.currentPlayer.state.hexagons[toIndex];
 
         let fromNum = parseInt(fromHex.props.text);
-        fromHex.props.text = (fromNum - amount) + '';
 
-        toHex.props.text = amount+'';
+        if (amount == 'all') {
+            fromHex.props.text = '1';
+            toHex.props.text = (fromNum - 1) + '';
+        } else {
+            fromHex.props.text = (fromNum - amount) + '';
+            toHex.props.text = amount + '';
+        }
+
         toHex.props.image = fromHex.props.image;
     }
 
@@ -396,19 +432,124 @@ class GameHelper extends Component {
             }
 
             // update hexagons in database
-            Meteor.call('games.updateHexagons', this.props.id, playerNumber, this.props.currentPlayer.state.hexagons);
+            this.updateHexagonsDatabase();
         }
     }
 
+    updateHexagonsDatabase() {
+        Meteor.call('games.updateHexagons', this.props.id, this.getCurrentPlayerNumber(), this.props.currentPlayer.state.hexagons);
+    }
+    
+    moveCurrentBobcat(direction) {
+        let toIndex = this.hexHelper.getAdjacentHexIndex(this.state.currentBobcatIndex, direction);
+        this.setState(this.state);
+
+        if (toIndex) {
+            console.log(toIndex);
+            console.log(HexHelper.isHexOwnedBy(this.props.currentPlayer.state.hexagons[toIndex], -1));
+
+            // make sure tile is empty
+            if (HexHelper.isHexOwnedBy(this.props.currentPlayer.state.hexagons[toIndex], -1)) {
+                console.log('move is being called! toIndex: ' + toIndex);
+                this.highlightCurrentBobcat();
+
+                this.moveUnits(this.state.currentBobcatIndex,
+                    toIndex, 'all');
+
+                this.updateHexagonsDatabase();
+            }
+        }
+    }
+
+    evalInContext(js, context) {
+        return function() { return eval(js); }.call(context);
+    }
+
+    /**
+     * Event handler for code generation button
+     * @param event
+     */
     onClickCodeGeneration(event) {
         event.preventDefault();
 
+        this.setState({codeRunning: true});
+
+        // generate the code
+        Blockly.JavaScript.addReservedWords('code', 'event');
         var code = Blockly.JavaScript.workspaceToCode(this.state.workspace);
-        console.log(code);
+
+        // get a list of the bobcats the player owns, and execute the code for each bobcat
+        let bobcatIndices = this.hexHelper.getMyBobcatIndices(this.props.currentPlayer.state.hexagons, this.getCurrentPlayerNumber());
+
+        // execute the code, display an error pop up if there is an error
+        try {
+            // loop through each bobcat index I own, and run the generated code once for each bobcat tile
+            for (let i = 0; i < bobcatIndices.length; i++) {
+                setTimeout( function() {
+                    console.log('calling on: ' + bobcatIndices[i]);
+                    this.setState({currentBobcatIndex: bobcatIndices[i]});
+                    this.evalInContext(code, {context: this});
+                }.bind(this), i*500);
+            }
+
+        } catch (e) {
+            alert(e);
+        }
+
+        setTimeout(function() { this.setState({codeRunning: false}); }.bind(this), 500);
     }
 
+    /**
+     * Action taken whenever 'move' button is pressed. This button is used behind the scenes by the Blockly code
+     */
+    onClickMove(event) {
+        event.preventDefault();
 
+        console.log('Move clicked - ' + this.state.moveDirection + ' ' + this.state.myAmount + ' : ' + this.state.theirAmount);
+
+        // retrieve the move direction
+        let moveDirection = document.getElementById('moveDirection').value;
+
+        // move the current bobcat
+        this.moveCurrentBobcat(moveDirection);
+
+        // testing selecting an animal radio button
+        var owlButton = document.getElementById('owl');
+        owlButton.checked = true;
+    }
+
+    /**
+     * Action taken whenever 'attack' button is pressed. This button is used behind the scenes by the Blockly code
+     */
+    onClickAttack(event) {
+        event.preventDefault();
+
+        console.log('Attack clicked - ' + this.state.myAmount + ' : ' + this.state.theirAmount);
+    }
+
+    handleChangeMyAmount(event) {
+        this.setState({myAmount: event.target.value});
+    }
+
+    handleChangeTheirAmount(event) {
+        this.setState({theirAmount: event.target.value});
+    }
+
+    handleChangeMoveDirection(event) {
+        this.setState({moveDirection: event.target.value});
+    }
+
+    onClickAnimalType(event) {
+        console.log(event.target.value);
+
+        // this.setState({animalType: event.target.value});
+    }
+
+    /**
+     * Blockly code! Handles creation of custom blocks and code generation from blocks
+     */
     componentDidUpdate() {
+
         if (this.props.game && !this.state.blocklyLoaded) {
             console.log('mounted');
 
@@ -418,192 +559,6 @@ class GameHelper extends Component {
             /*
             * Custom Blockly blocks!
             */
-            // custom if statement
-            Blockly.Blocks['controls_if_custom'] = {
-                /**
-                 * Block for if/elseif/else condition.
-                 * @this Blockly.Block
-                 */
-                init: function() {
-                    this.setHelpUrl(Blockly.Msg.CONTROLS_IF_HELPURL);
-                    this.setColour(Blockly.Blocks.logic.HUE);
-                    this.appendValueInput('IF0')
-                        .setCheck('Boolean')
-                        .appendField(Blockly.Msg.CONTROLS_IF_MSG_IF);
-                    this.appendStatementInput('DO0')
-                        .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
-                    this.setPreviousStatement(true);
-                    this.setNextStatement(true);
-                    this.setMutator(new Blockly.Mutator(['controls_if_elseif',
-                        'controls_if_else']));
-                    // Assign 'this' to a variable for use in the tooltip closure below.
-                    var thisBlock = this;
-                    this.setTooltip(function() {
-                        if (!thisBlock.elseifCount_ && !thisBlock.elseCount_) {
-                            return Blockly.Msg.CONTROLS_IF_TOOLTIP_1;
-                        } else if (!thisBlock.elseifCount_ && thisBlock.elseCount_) {
-                            return Blockly.Msg.CONTROLS_IF_TOOLTIP_2;
-                        } else if (thisBlock.elseifCount_ && !thisBlock.elseCount_) {
-                            return Blockly.Msg.CONTROLS_IF_TOOLTIP_3;
-                        } else if (thisBlock.elseifCount_ && thisBlock.elseCount_) {
-                            return Blockly.Msg.CONTROLS_IF_TOOLTIP_4;
-                        }
-                        return '';
-                    });
-                    this.elseifCount_ = 0;
-                    this.elseCount_ = 0;
-                },
-                /**
-                 * Create XML to represent the number of else-if and else inputs.
-                 * @return {Element} XML storage element.
-                 * @this Blockly.Block
-                 */
-                mutationToDom: function() {
-                    if (!this.elseifCount_ && !this.elseCount_) {
-                        return null;
-                    }
-                    var container = document.createElement('mutation');
-                    if (this.elseifCount_) {
-                        container.setAttribute('elseif', this.elseifCount_);
-                    }
-                    if (this.elseCount_) {
-                        container.setAttribute('else', 1);
-                    }
-                    return container;
-                },
-                /**
-                 * Parse XML to restore the else-if and else inputs.
-                 * @param {!Element} xmlElement XML storage element.
-                 * @this Blockly.Block
-                 */
-                domToMutation: function(xmlElement) {
-                    this.elseifCount_ = parseInt(xmlElement.getAttribute('elseif'), 10) || 0;
-                    this.elseCount_ = parseInt(xmlElement.getAttribute('else'), 10) || 0;
-                    this.updateShape_();
-                },
-                /**
-                 * Populate the mutator's dialog with this block's components.
-                 * @param {!Blockly.Workspace} workspace Mutator's workspace.
-                 * @return {!Blockly.Block} Root block in mutator.
-                 * @this Blockly.Block
-                 */
-                decompose: function(workspace) {
-                    var containerBlock = workspace.newBlock('controls_if_if');
-                    containerBlock.initSvg();
-                    var connection = containerBlock.nextConnection;
-                    for (var i = 1; i <= this.elseifCount_; i++) {
-                        var elseifBlock = workspace.newBlock('controls_if_elseif');
-                        elseifBlock.initSvg();
-                        connection.connect(elseifBlock.previousConnection);
-                        connection = elseifBlock.nextConnection;
-                    }
-                    if (this.elseCount_) {
-                        var elseBlock = workspace.newBlock('controls_if_else');
-                        elseBlock.initSvg();
-                        connection.connect(elseBlock.previousConnection);
-                    }
-                    return containerBlock;
-                },
-                /**
-                 * Reconfigure this block based on the mutator dialog's components.
-                 * @param {!Blockly.Block} containerBlock Root block in mutator.
-                 * @this Blockly.Block
-                 */
-                compose: function(containerBlock) {
-                    var clauseBlock = containerBlock.nextConnection.targetBlock();
-                    // Count number of inputs.
-                    this.elseifCount_ = 0;
-                    this.elseCount_ = 0;
-                    var valueConnections = [null];
-                    var statementConnections = [null];
-                    var elseStatementConnection = null;
-                    while (clauseBlock) {
-                        switch (clauseBlock.type) {
-                            case 'controls_if_elseif':
-                                this.elseifCount_++;
-                                valueConnections.push(clauseBlock.valueConnection_);
-                                statementConnections.push(clauseBlock.statementConnection_);
-                                break;
-                            case 'controls_if_else':
-                                this.elseCount_++;
-                                elseStatementConnection = clauseBlock.statementConnection_;
-                                break;
-                            default:
-                                throw 'Unknown block type.';
-                        }
-                        clauseBlock = clauseBlock.nextConnection &&
-                            clauseBlock.nextConnection.targetBlock();
-                    }
-                    this.updateShape_();
-                    // Reconnect any child blocks.
-                    for (var i = 1; i <= this.elseifCount_; i++) {
-                        Blockly.Mutator.reconnect(valueConnections[i], this, 'IF' + i);
-                        Blockly.Mutator.reconnect(statementConnections[i], this, 'DO' + i);
-                    }
-                    Blockly.Mutator.reconnect(elseStatementConnection, this, 'ELSE');
-                },
-                /**
-                 * Store pointers to any connected child blocks.
-                 * @param {!Blockly.Block} containerBlock Root block in mutator.
-                 * @this Blockly.Block
-                 */
-                saveConnections: function(containerBlock) {
-                    var clauseBlock = containerBlock.nextConnection.targetBlock();
-                    var i = 1;
-                    while (clauseBlock) {
-                        switch (clauseBlock.type) {
-                            case 'controls_if_elseif':
-                                var inputIf = this.getInput('IF' + i);
-                                var inputDo = this.getInput('DO' + i);
-                                clauseBlock.valueConnection_ =
-                                    inputIf && inputIf.connection.targetConnection;
-                                clauseBlock.statementConnection_ =
-                                    inputDo && inputDo.connection.targetConnection;
-                                i++;
-                                break;
-                            case 'controls_if_else':
-                                var inputDo = this.getInput('ELSE');
-                                clauseBlock.statementConnection_ =
-                                    inputDo && inputDo.connection.targetConnection;
-                                break;
-                            default:
-                                throw 'Unknown block type.';
-                        }
-                        clauseBlock = clauseBlock.nextConnection &&
-                            clauseBlock.nextConnection.targetBlock();
-                    }
-                },
-                /**
-                 * Modify this block to have the correct number of inputs.
-                 * @private
-                 * @this Blockly.Block
-                 */
-                updateShape_: function() {
-                    // Delete everything.
-                    if (this.getInput('ELSE')) {
-                        this.removeInput('ELSE');
-                    }
-                    var i = 1;
-                    while (this.getInput('IF' + i)) {
-                        this.removeInput('IF' + i);
-                        this.removeInput('DO' + i);
-                        i++;
-                    }
-                    // Rebuild block.
-                    for (var i = 1; i <= this.elseifCount_; i++) {
-                        this.appendValueInput('IF' + i)
-                            .setCheck('Boolean')
-                            .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSEIF);
-                        this.appendStatementInput('DO' + i)
-                            .appendField(Blockly.Msg.CONTROLS_IF_MSG_THEN);
-                    }
-                    if (this.elseCount_) {
-                        this.appendStatementInput('ELSE')
-                            .appendField(Blockly.Msg.CONTROLS_IF_MSG_ELSE);
-                    }
-                }
-            };
-
             Blockly.Blocks['attack'] = {
                 init: function() {
                     this.appendDummyInput()
@@ -662,26 +617,59 @@ class GameHelper extends Component {
                 }
             };
 
+            // TODO: Start here now. write javascript code to interpret the blocks into button pressing?
             // Code generation
+            // custom if code generation
+            Blockly.JavaScript['controls_if'] = function(block) {
+                // If/elseif/else condition.
+                var n = 0;
+                var code = '', branchCode, conditionCode;
+                do {
+                    conditionCode = Blockly.JavaScript.valueToCode(block, 'IF' + n,
+                            Blockly.JavaScript.ORDER_NONE) || 'false';
+                    branchCode = Blockly.JavaScript.statementToCode(block, 'DO' + n);
+                    code += (n > 0 ? ' else ' : '') +
+                        'if (' + conditionCode + ') {\n' + branchCode + '}';
+
+                    ++n;
+                } while (block.getInput('IF' + n));
+
+                if (block.getInput('ELSE')) {
+                    branchCode = Blockly.JavaScript.statementToCode(block, 'ELSE');
+                    code += ' else {\n' + branchCode + '}';
+                }
+                return code + '\n';
+            }.bind(this);
+
+            Blockly.JavaScript['controls_ifelse'] = Blockly.JavaScript['controls_if'];
+
             Blockly.JavaScript['attack'] = function(block) {
-                // TODO: Assemble JavaScript into code variable.
-                var code = 'attack;\n';
+                // must have timeout function to match the pause in move code generation
+                var code = 'setTimeout(function() { document.getElementById("attackButton").click(); }, 100);\n';
+
                 return code;
-            };
+            }.bind(this);
 
             Blockly.JavaScript['move'] = function(block) {
                 var dropdown_direction = block.getFieldValue('DIRECTION');
-                // TODO: Assemble JavaScript into code variable.
-                var code = 'move;\n';
+
+            //    console.log(dropdown_direction);
+
+                var code = 'document.getElementById("moveDirection").value = "' + dropdown_direction + '"\n';
+                code += 'var event = new Event("input", { bubbles: true });\n'
+                code += 'document.getElementById("moveDirection").dispatchEvent(event);\n';
+
+                // wait for event to trigger completely
+                code += 'setTimeout(function() { document.getElementById("moveButton").click(); }, 100);\n';
                 return code;
-            };
+            }.bind(this);
 
             Blockly.JavaScript['my_bobcats'] = function(block) {
                 var dropdown_comparison = block.getFieldValue('COMPARISON');
                 var value_number = Blockly.JavaScript.valueToCode(block, 'NUMBER', Blockly.JavaScript.ORDER_ATOMIC);
-                // TODO: Assemble JavaScript into code variable.
+
                 var code = 'bobcats_true/false';
-                // TODO: Change ORDER_NONE to the correct strength.
+
                 return [code, Blockly.JavaScript.ORDER_NONE];
             };
 
@@ -689,9 +677,9 @@ class GameHelper extends Component {
                 var dropdown_animal = block.getFieldValue('ANIMAL');
                 var dropdown_comparison = block.getFieldValue('COMPARISON');
                 var value_number = Blockly.JavaScript.valueToCode(block, 'NUMBER', Blockly.JavaScript.ORDER_ATOMIC);
-                // TODO: Assemble JavaScript into code variable.
+
                 var code = 'animal_true/false';
-                // TODO: Change ORDER_NONE to the correct strength.
+
                 return [code, Blockly.JavaScript.ORDER_NONE];
             };
 
@@ -736,6 +724,38 @@ class GameHelper extends Component {
                     <div id="blocklyDiv" style={{height: "480px", width: "600px"}}></div>
 
                     <button type="button" className="btn btn-lg btn-success" onClick={this.onClickCodeGeneration}>Play Cards</button>
+                    <br/>
+                    <br/>
+                    <form>
+                        <div className="form-group">
+                            My bobcat #
+                            <input type="text" name="my-amount" value={this.state.myAmount} onChange={this.handleChangeMyAmount}/><br/>
+                            Their animal #
+                            <input type="text" name="their-amount" value={this.state.theirAmount} onChange={this.handleChangeTheirAmount}/><br/>
+                            Their animal type<br/>
+                        </div>
+
+                        <div className="form-group">
+                            <div className="radio">
+                                <input type="radio" name="animal-type" id="owl" value="owl" onChange={this.onClickAnimalType}/>Owl<br/>
+                            </div>
+
+                            <div className="radio">
+                                <input type="radio" name="animal-type" id="skunk" value="skunk" onChange={this.onClickAnimalType}/>Skunk<br/>
+                            </div>
+
+                            <div className="radio">
+                                <input type="radio" name="animal-type" id="bobcat" value="bobcat" onChange={this.onClickAnimalType}/>Bobcat<br/>
+                            </div>
+                        </div>
+                    </form>
+                    <br/>
+                    <input type="text" name="moveDirection" id="moveDirection" value={this.state.moveDirection} onChange={this.handleChangeMoveDirection}/><br/>
+                    <button type="button" id="moveButton" className="btn btn-success" onClick={this.onClickMove}>Move</button>
+                    <br/>
+                    <br/>
+                    <button type="button" id="attackButton" className="btn btn-success" onClick={this.onClickAttack}>Attack</button>
+
 
                 </div>
             );
