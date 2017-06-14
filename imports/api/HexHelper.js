@@ -265,7 +265,7 @@ class HexHelper {
             return 'owl';
         } else if (hex.props.image.indexOf('cat') > -1) {
             return 'cat';
-        } else {
+        } else if (hex.props.image.indexOf('skunk') > -1) {
             return 'skunk';
         }
     }

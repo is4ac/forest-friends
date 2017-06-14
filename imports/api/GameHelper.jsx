@@ -494,6 +494,8 @@ class GameHelper extends Component {
 
     currentBorderingAnimalIs(animal, comparison, number) {
         let hexes = this.hexHelper.getAllAdjacentHexIndices(this.state.currentBobcatIndex);
+        console.log(hexes);
+        let found = false;
 
         for (let i = 0; i < hexes.length; i++) {
             let hex = this.props.currentPlayer.state.hexagons[hexes[i]];
@@ -501,27 +503,33 @@ class GameHelper extends Component {
             // check to see if each tile is an animal type that matches
             if (HexHelper.getAnimal(hex) == animal) {
 
+                console.log('found a skunk');
+
                 // get the number TODO: need to get the static functions to all line up
                 let theirNum = this.hexHelper.getNumber(hex);
 
                 switch (comparison) {
                     case '=':
-                        return theirNum == number;
+                        found = theirNum == number;
                     case '!=':
-                        return theirNum != number;
+                        found = theirNum != number;
                     case '<':
-                        return theirNum < number;
+                        found = theirNum < number;
                     case '<=':
-                        return theirNum <= number;
+                        found = theirNum <= number;
                     case '>':
-                        return theirNum > number;
+                        found = theirNum > number;
                     case '>=':
-                        return theirNum >= number;
+                        found = theirNum >= number;
+                }
+
+                if (found) {
+                    return found;
                 }
             }
         }
 
-        return false;
+        return found;
     }
 
     evalInContext(js, context) {
