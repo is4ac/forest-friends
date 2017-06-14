@@ -92,6 +92,52 @@ class HexHelper {
         return false;
     }
 
+    getAllAdjacentHexIndices(thisIndex) {
+        let indices = [];
+
+        if (thisIndex % 6 != 0) {
+            indices.push(thisIndex - 1);
+        }
+
+        if ((thisIndex+1) % 6 != 0) {
+            indices.push(thisIndex + 1);
+        }
+
+        if (thisIndex < 36 && thisIndex != 0 && thisIndex != 12 && thisIndex != 24) {
+            if (thisIndex < 6 || (thisIndex > 11 && thisIndex < 18) || (thisIndex > 23 && thisIndex < 30)) {
+                indices.push(thisIndex + 5);
+            } else {
+                indices.push(thisIndex + 6);
+            }
+        }
+
+        if (thisIndex >= 6 && thisIndex != 12 && thisIndex != 24 && thisIndex != 36) {
+            if (thisIndex > 36 || (thisIndex > 11 && thisIndex < 18) || (thisIndex > 23 && thisIndex < 30)) {
+                indices.push(thisIndex - 7);
+            } else {
+                indices.push(thisIndex - 6);
+            }
+        }
+
+        if (thisIndex < 36 && thisIndex != 11 && thisIndex != 23 && thisIndex != 35) {
+            if (thisIndex < 6 || (thisIndex > 11 && thisIndex < 18) || (thisIndex > 23 && thisIndex < 30)) {
+                indices.push(thisIndex + 6);
+            } else {
+                indices.push(thisIndex + 7);
+            }
+        }
+        
+        if (thisIndex >= 6 && thisIndex != 11 && thisIndex != 23 && thisIndex != 35) {
+            if (thisIndex >= 36 || (thisIndex > 11 && thisIndex < 18) || (thisIndex > 23 && thisIndex < 30)) {
+                indices.push(thisIndex - 6);
+            } else {
+                indices.push(thisIndex - 5);
+            }
+        }
+
+        return indices;
+    }
+
     /**
      * Returns true if the hex is bordering the hex at selectedIndex
      * @param hex hex object or index value (based on array)

@@ -67,6 +67,7 @@ class GameHelper extends Component {
         this.moveCurrentBobcat = this.moveCurrentBobcat.bind(this);
         this.highlightCurrentBobcat = this.highlightCurrentBobcat.bind(this);
         this.myBobcatsComparison = this.myBobcatsComparison.bind(this);
+        this.currentBorderingAnimalIs = this.currentBorderingAnimalIs.bind(this);
     }
 
     /**
@@ -253,7 +254,7 @@ class GameHelper extends Component {
     }
 
     /**
-     *
+     * TODO: add check to see if the toIndex tile is able to be moved to?
      * @param fromIndex
      * @param toIndex
      * @param amount either the number of units to move or the string 'all' which moves all but one
@@ -262,7 +263,7 @@ class GameHelper extends Component {
         let fromHex = this.props.currentPlayer.state.hexagons[fromIndex];
         let toHex = this.props.currentPlayer.state.hexagons[toIndex];
 
-        let fromNum = parseInt(fromHex.props.text);
+        let fromNum = this.hexHelper.getNumber(fromHex);
 
         // check that there are enough units to move
         if (fromNum > 1) {
@@ -491,6 +492,38 @@ class GameHelper extends Component {
         return false;
     }
 
+    currentBorderingAnimalIs(animal, comparison, number) {
+        let hexes = this.hexHelper.getAllAdjacentHexIndices(this.state.currentBobcatIndex);
+
+        for (let i = 0; i < hexes.length; i++) {
+            let hex = this.props.currentPlayer.state.hexagons[hexes[i]];
+
+            // check to see if each tile is an animal type that matches
+            if (HexHelper.getAnimal(hex) == animal) {
+
+                // get the number TODO: need to get the static functions to all line up
+                let theirNum = this.hexHelper.getNumber(hex);
+
+                switch (comparison) {
+                    case '=':
+                        return theirNum == number;
+                    case '!=':
+                        return theirNum != number;
+                    case '<':
+                        return theirNum < number;
+                    case '<=':
+                        return theirNum <= number;
+                    case '>':
+                        return theirNum > number;
+                    case '>=':
+                        return theirNum >= number;
+                }
+            }
+        }
+
+        return false;
+    }
+
     evalInContext(js, context) {
         return function() { return eval(js); }.call(context);
     }
@@ -636,7 +669,7 @@ class GameHelper extends Component {
                 init: function() {
                     this.appendDummyInput()
                         .appendField("other")
-                        .appendField(new Blockly.FieldDropdown([["owls","owls"], ["skunks","skunks"], ["bobcats","bobcats"]]), "ANIMAL")
+                        .appendField(new Blockly.FieldDropdown([["owls","owl"], ["skunks","skunk"], ["bobcats","cat"]]), "ANIMAL")
                         .appendField(new Blockly.FieldDropdown([["=","="], ["\u2260","!="], ["<","<"], ["\u2264","<="], [">",">"], ["\u2265",">="]]), "COMPARISON");
                     this.appendValueInput("NUMBER")
                         .setCheck("Number");
@@ -700,10 +733,7 @@ class GameHelper extends Component {
                 var dropdown_comparison = block.getFieldValue('COMPARISON');
                 var value_number = Blockly.JavaScript.valueToCode(block, 'NUMBER', Blockly.JavaScript.ORDER_ATOMIC);
 
-                console.log('dropdown: ' + dropdown_comparison);
-                console.log(value_number);
-
-                var code = 'this.context.myBobcatsComparison("' + dropdown_comparison + '", ' + value_number + ')\n';
+                var code = 'this.context.myBobcatsComparison("' + dropdown_comparison + '", ' + value_number + ')';
 
                 return [code, Blockly.JavaScript.ORDER_NONE];
             };
@@ -713,7 +743,12 @@ class GameHelper extends Component {
                 var dropdown_comparison = block.getFieldValue('COMPARISON');
                 var value_number = Blockly.JavaScript.valueToCode(block, 'NUMBER', Blockly.JavaScript.ORDER_ATOMIC);
 
-                var code = 'animal_true/false';
+                console.log(dropdown_animal);
+                console.log(dropdown_comparison);
+                console.log(value_number);
+
+                var code = 'this.context.currentBorderingAnimalIs("' + dropdown_animal + '", "' + dropdown_comparison +
+                    '", ' + value_number + ')';
 
                 return [code, Blockly.JavaScript.ORDER_NONE];
             };
