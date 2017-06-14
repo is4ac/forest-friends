@@ -66,6 +66,7 @@ class GameHelper extends Component {
         this.evalInContext = this.evalInContext.bind(this);
         this.moveCurrentBobcat = this.moveCurrentBobcat.bind(this);
         this.highlightCurrentBobcat = this.highlightCurrentBobcat.bind(this);
+        this.myBobcatsComparison = this.myBobcatsComparison.bind(this);
     }
 
     /**
@@ -469,6 +470,27 @@ class GameHelper extends Component {
         return -1;
     }
 
+    myBobcatsComparison(comparison, number) {
+        let myBobcats = this.hexHelper.getNumber(this.props.currentPlayer.state.hexagons[this.state.currentBobcatIndex]);
+
+        switch(comparison) {
+            case '=':
+                return myBobcats == number;
+            case '!=':
+                return myBobcats != number;
+            case '<':
+                return myBobcats < number;
+            case '<=':
+                return myBobcats <= number;
+            case '>':
+                return myBobcats > number;
+            case '>=':
+                return myBobcats >= number;
+        }
+
+        return false;
+    }
+
     evalInContext(js, context) {
         return function() { return eval(js); }.call(context);
     }
@@ -599,7 +621,7 @@ class GameHelper extends Component {
                 init: function() {
                     this.appendDummyInput()
                         .appendField("my bobcats")
-                        .appendField(new Blockly.FieldDropdown([["=","equals"], ["\u2260","not_equals"], ["<","less"], ["\u2264","less_equals"], [">","greater"], ["\u2265","greater_equals"]]), "COMPARISON");
+                        .appendField(new Blockly.FieldDropdown([["=","="], ["\u2260","!="], ["<","<"], ["\u2264","<="], [">",">"], ["\u2265",">="]]), "COMPARISON");
                     this.appendValueInput("NUMBER")
                         .setCheck("Number");
                     this.setInputsInline(true);
@@ -615,7 +637,7 @@ class GameHelper extends Component {
                     this.appendDummyInput()
                         .appendField("other")
                         .appendField(new Blockly.FieldDropdown([["owls","owls"], ["skunks","skunks"], ["bobcats","bobcats"]]), "ANIMAL")
-                        .appendField(new Blockly.FieldDropdown([["=","equals"], ["\u2260","not_equals"], ["<","less"], ["\u2264","less_equals"], [">","greater"], ["\u2265","greater_equals"]]), "COMPARISON");
+                        .appendField(new Blockly.FieldDropdown([["=","="], ["\u2260","!="], ["<","<"], ["\u2264","<="], [">",">"], ["\u2265",">="]]), "COMPARISON");
                     this.appendValueInput("NUMBER")
                         .setCheck("Number");
                     this.setInputsInline(true);
@@ -681,7 +703,7 @@ class GameHelper extends Component {
                 console.log('dropdown: ' + dropdown_comparison);
                 console.log(value_number);
 
-                var code = 'bobcats_true/false';
+                var code = 'this.context.myBobcatsComparison("' + dropdown_comparison + '", ' + value_number + ')\n';
 
                 return [code, Blockly.JavaScript.ORDER_NONE];
             };
@@ -734,41 +756,10 @@ class GameHelper extends Component {
                         </tbody>
                     </table>
 
-                    <div id="blocklyDiv" style={{height: "480px", width: "600px"}}></div>
-
                     <button type="button" className="btn btn-lg btn-success" onClick={this.onClickCodeGeneration}>Play Cards</button>
                     <br/>
+                    <div id="blocklyDiv" style={{height: "480px", width: "600px"}}></div>
                     <br/>
-                    <form>
-                        <div className="form-group">
-                            My bobcat #
-                            <input type="text" name="my-amount" value={this.state.myAmount} onChange={this.handleChangeMyAmount}/><br/>
-                            Their animal #
-                            <input type="text" name="their-amount" value={this.state.theirAmount} onChange={this.handleChangeTheirAmount}/><br/>
-                            Their animal type<br/>
-                        </div>
-
-                        <div className="form-group">
-                            <div className="radio">
-                                <input type="radio" name="animal-type" id="owl" value="owl" onChange={this.onClickAnimalType}/>Owl<br/>
-                            </div>
-
-                            <div className="radio">
-                                <input type="radio" name="animal-type" id="skunk" value="skunk" onChange={this.onClickAnimalType}/>Skunk<br/>
-                            </div>
-
-                            <div className="radio">
-                                <input type="radio" name="animal-type" id="bobcat" value="bobcat" onChange={this.onClickAnimalType}/>Bobcat<br/>
-                            </div>
-                        </div>
-                    </form>
-                    <br/>
-                    <input type="text" name="moveDirection" id="moveDirection" value={this.state.moveDirection} onChange={this.handleChangeMoveDirection}/><br/>
-                    <button type="button" id="moveButton" className="btn btn-success" onClick={this.onClickMove}>Move</button>
-                    <br/>
-                    <br/>
-                    <button type="button" id="attackButton" className="btn btn-success" onClick={this.onClickAttack}>Attack</button>
-
 
                 </div>
             );

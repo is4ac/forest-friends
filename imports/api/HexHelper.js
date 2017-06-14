@@ -194,6 +194,10 @@ class HexHelper {
         return hexes;
     }
 
+    getNumber(hex) {
+        return parseInt(hex.props.text);
+    }
+
     /**
      * Returns whether or not the given hex is owned by the player number (0 or 1)
      * -1 player number indicates that it is a terrain tile
