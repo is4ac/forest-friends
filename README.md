@@ -7,5 +7,5 @@ Then from the home directory of the project, run:
 
 The application should now be running at http://localhost:3000/. 
 
-# Gameplay
+## Gameplay
 
