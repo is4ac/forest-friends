@@ -87,9 +87,14 @@ class GameHelper extends Component {
     handleClickDelete(event) {
         event.preventDefault();
 
+        var $modalDiv = $('.modal');
+        $modalDiv.modal('hide');
+
         Meteor.call('games.delete', this.props.id);
 
-        FlowRouter.go('/lobby');
+        setTimeout(function() {
+            FlowRouter.go('/lobby');
+        }.bind(this), 300);
     }
 
     /**

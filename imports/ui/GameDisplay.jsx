@@ -7,6 +7,7 @@ import { Meteor } from 'meteor/meteor';
 import { createContainer } from 'meteor/react-meteor-data';
 import { HexGrid, Layout, Hex } from '../react-hexgrid';
 import { FlowRouter } from 'meteor/kadira:flow-router-ssr';
+import { HexHelper } from '../api/HexHelper.js';
 
 /**
  * This component generates the Hex grid map (and eventually the cards) for game play
@@ -30,25 +31,32 @@ class GameDisplay extends Component {
         let config = this.props.boardConfig;
         let game = this.props.game;
         let layout = null;
+        let layout2 = null;
+        let hexagons2 = null;
 
         // create the layout if the database is loaded, and check if it's the currentUser's turn
         if (game != null && this.props.currentUser != null) {
             layout = new Layout({width: 8, height: 8, flat: true, spacing: 0}, {x: -36, y: -40});
+
+            let hexHelper = new HexHelper();
+            hexagons2 = hexHelper.initialize();
+            layout2 = new Layout({width: 8, height: 8, flat: true, spacing: 0}, {x: -36, y: -200});
         }
 
-        console.log()
-        
         return (
             <div>
                 { game ?
                     <div>
                         <div className="row">
                             <div className="col-md-12">
-                                {this.props.game ? <HexGrid width={config.width}
+                                {this.props.game ? <div>
+                                                <HexGrid width={config.width}
                                                             height={config.height}
                                                             hexagons={this.props.currentPlayer.state.hexagons}
                                                             layout={layout}
                                                             actions={this.state.actions} />
+
+                                                   </div>
                                                 : null}
                             </div>
                         </div>
