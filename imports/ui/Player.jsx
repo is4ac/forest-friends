@@ -16,8 +16,10 @@ class Player {
             hand: cards, // array of Cards that this player owns in their hand
             playedCards: [], // the array of cards that are currently played
             selectedHexIndex: -1, // which tile is currently selected. -1 means no tile
-            finishedWithTurn: false, // keeps track of whether or not they've finished their turn
-            canSelectTiles: select, // boolean to keep track of if it's their turn to select tiles on the board or not
+            movePhase: select, // true if it's currently their move phase, false if it's their cards phase
+            isFinishedWithMove: false, // keeps track of whether or not they've finished their move phase
+            isFinishedWithCards: false, // keeps track of whether or not they've finished their cards phase
+            executeCards: false, // trigger flag for whether or not to execute the currently selected cards
             selectedCard: null, // the currently selected card
         };
     }

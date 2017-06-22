@@ -20,9 +20,6 @@ class GameHelper extends Component {
         this.state = {
             blocklyLoaded: false,
             workspace: null,
-            myAmount: '',
-            theirAmount: '',
-            moveDirection: '',
             codeRunning: false,
             currentBobcatIndex: -1, // used during generated code evals
             boardConfig: {
@@ -54,21 +51,14 @@ class GameHelper extends Component {
         this.reinforce = this.reinforce.bind(this);
         this.addOne = this.addOne.bind(this);
         this.updateHexagonsDatabase = this.updateHexagonsDatabase.bind(this);
-        this.onClickCodeGeneration = this.onClickCodeGeneration.bind(this);
         this.renderSelection = this.renderSelection.bind(this);
-        this.handleChangeMyAmount = this.handleChangeMyAmount.bind(this);
-        this.handleChangeTheirAmount = this.handleChangeTheirAmount.bind(this);
-        this.handleChangeMyAmount = this.handleChangeMyAmount.bind(this);
-        this.onClickAnimalType = this.onClickAnimalType.bind(this);
-        this.onClickMove = this.onClickMove.bind(this);
-        this.onClickAttack = this.onClickAttack.bind(this);
-        this.handleChangeMoveDirection = this.handleChangeMoveDirection.bind(this);
         this.evalInContext = this.evalInContext.bind(this);
         this.moveCurrentBobcat = this.moveCurrentBobcat.bind(this);
         this.highlightCurrentBobcat = this.highlightCurrentBobcat.bind(this);
         this.myBobcatsComparison = this.myBobcatsComparison.bind(this);
         this.currentBorderingAnimalIs = this.currentBorderingAnimalIs.bind(this);
         this.isCurrentUsersTurn = this.isCurrentUsersTurn.bind(this);
+        this.executeCards = this.executeCards.bind(this);
     }
 
     /**
@@ -111,15 +101,18 @@ class GameHelper extends Component {
 
         let current = this.getCurrentPlayerNumber();
 
-        // randomly reinforce the current turn's units if it's the end of their turn
-        if (this.isCurrentUsersTurn()) { // TODO: check to make sure it's after an End Move
-            this.reinforce();
-            Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
-        }
-
-        // Check to see if it is a move turn or cards turn
+        // Check to see if it is a move phase or cards phase
         if (this.props.currentPlayer.state.movePhase) {
-            // end the turn if the opponent is finished with their turn
+            // Ending the move phase
+            Meteor.call('games.setFinishedWithMove', this.props.id, this.getCurrentPlayerNumber(), true);
+
+            // randomly reinforce the current turn's units if it's the end of their turn
+            if (this.isCurrentUsersTurn()) {
+                this.reinforce();
+                Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
+            }
+
+            // end the turn if the opponent is finished with their phase
             if (this.props.otherPlayer.state.isFinishedWithCards) {
                 this.props.message = "";
 
@@ -127,23 +120,53 @@ class GameHelper extends Component {
                 this.unhighlightBothPlayers();
 
                 // transfer hexagon data to other player's state so it shows up on their screen
-                this.copyHexagons();
+                this.copyHexagons('to');
 
+                Meteor.call('games.updateHexagons', this.props.id, 1 - current, this.props.otherPlayer.state.hexagons);
+
+                // TODO: execute the code of cards on the otherPlayer
+                // TODO: maybe change a state value in otherPlayer so that that flag activates the code to execute???
+                Meteor.call('games.setExecuteCards', this.props.id, 1 - current, true);
+
+                Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
+
+                console.log('calling changeTurns');
+                Meteor.call('games.changeTurns', this.props.id);
+
+                this.props.buttonText = "Play Cards";
+            } else {
+                // otherwise, wait for them to finish!!
+                this.props.buttonText = "Waiting...";
+                this.props.message = "Please wait for other player.";
+            }
+        } else {
+            // Currently ending the cards phase
+            Meteor.call('games.setFinishedWithCards', this.props.id, this.getCurrentPlayerNumber(), true);
+
+            // end the turn if the opponent is finished with their phase
+            if (this.props.otherPlayer.state.isFinishedWithMove) {
+                this.props.message = "";
+
+                // reset the tile selections
+                this.unhighlightBothPlayers();
+
+                // transfer hexagon data to other player's state so it shows up on their screen
+                this.copyHexagons('from');
+
+                // execute cards
+                this.executeCards();
+
+                // update the database so it displays on the other player's screen
                 Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
                 Meteor.call('games.updateHexagons', this.props.id, 1 - current, this.props.otherPlayer.state.hexagons);
 
                 console.log('calling changeTurns');
                 Meteor.call('games.changeTurns', this.props.id);
-
-                // TODO:
             } else {
                 // otherwise, wait for them to finish!!
                 this.props.buttonText = "Waiting...";
-                Meteor.call('games.setFinishedWithMove', true, this.props.id, this.getCurrentPlayerNumber());
                 this.props.message = "Please wait for other player.";
             }
-        } else {
-            
         }
     }
 
@@ -177,9 +200,10 @@ class GameHelper extends Component {
     /**
      * Copies the hexagons from the player who was selecting tiles over to the
      * other player who was selecting cards
+     * @param direction 'to' == copy hexagons from currentPlayer to otherPlayer, otherwise, copy it the other way
      */
-    copyHexagons() {
-        if (this.props.currentPlayer.state.canSelectTiles) {
+    copyHexagons(direction) {
+        if (direction == 'to') {
             HexHelper.cloneHexagons(this.props.otherPlayer.state.hexagons, this.props.currentPlayer.state.hexagons);
         } else {
             HexHelper.cloneHexagons(this.props.currentPlayer.state.hexagons, this.props.otherPlayer.state.hexagons);
@@ -195,7 +219,7 @@ class GameHelper extends Component {
             console.log('highlighting bobcat...' + this.state.currentBobcatIndex);
             this.unhighlightAll();
             this.highlightHex(this.props.currentPlayer.state.hexagons[this.state.currentBobcatIndex]);
-            this.updateHexagonsDatabase();
+            this.updateHexagonsDatabase('current');
             Meteor.call('games.setSelectedHexIndex', this.props.id, this.getCurrentPlayerNumber(), this.state.currentBobcatIndex);
         }
     }
@@ -455,12 +479,16 @@ class GameHelper extends Component {
             }
 
             // update hexagons in database
-            this.updateHexagonsDatabase();
+            this.updateHexagonsDatabase('current');
         }
     }
 
-    updateHexagonsDatabase() {
-        Meteor.call('games.updateHexagons', this.props.id, this.getCurrentPlayerNumber(), this.props.currentPlayer.state.hexagons);
+    updateHexagonsDatabase(player) {
+        if (player == 'other') {
+            Meteor.call('games.updateHexagons', this.props.id, 1-this.getCurrentPlayerNumber(), this.props.currentPlayer.state.hexagons);
+        } else if (player == 'current') {
+            Meteor.call('games.updateHexagons', this.props.id, this.getCurrentPlayerNumber(), this.props.currentPlayer.state.hexagons);
+        }
     }
     
     moveCurrentBobcat(direction) {
@@ -478,7 +506,7 @@ class GameHelper extends Component {
                 this.moveUnits(this.state.currentBobcatIndex,
                     toIndex, 'all');
 
-                this.updateHexagonsDatabase();
+                this.updateHexagonsDatabase('current');
             }
 
             return toIndex;
@@ -552,12 +580,9 @@ class GameHelper extends Component {
         return function() { return eval(js); }.call(context);
     }
 
-    /**
-     * Event handler for code generation button
-     * @param event
-     */
-    onClickCodeGeneration(event) {
-        event.preventDefault();
+    executeCards() {
+        // Execute the code from the cards
+        console.log('executing cards');
 
         // generate the code
         Blockly.JavaScript.addReservedWords('code', 'event');
@@ -585,59 +610,31 @@ class GameHelper extends Component {
         } catch (e) {
             alert(e);
         }
+
+        // make sure to update the hexagons in the database
+        this.updateHexagonsDatabase('current');
+        this.copyHexagons('to');
+        this.updateHexagonsDatabase('other');
+
+        let current = this.getCurrentPlayerNumber();
+        Meteor.call('games.setExecuteCards', this.props.id, current, false);
     }
 
-    /**
-     * Action taken whenever 'move' button is pressed. This button is used behind the scenes by the Blockly code
-     */
-    onClickMove(event) {
-        event.preventDefault();
-
-        console.log('Move clicked - ' + this.state.moveDirection + ' ' + this.state.myAmount + ' : ' + this.state.theirAmount);
-
-        // retrieve the move direction
-        let moveDirection = document.getElementById('moveDirection').value;
-
-        // move the current bobcat
-        this.moveCurrentBobcat(moveDirection);
-
-        // testing selecting an animal radio button
-        var owlButton = document.getElementById('owl');
-        owlButton.checked = true;
-    }
-
-    /**
-     * Action taken whenever 'attack' button is pressed. This button is used behind the scenes by the Blockly code
-     */
-    onClickAttack(event) {
-        event.preventDefault();
-
-        console.log('Attack clicked - ' + this.state.myAmount + ' : ' + this.state.theirAmount);
-    }
-
-    handleChangeMyAmount(event) {
-        this.setState({myAmount: event.target.value});
-    }
-
-    handleChangeTheirAmount(event) {
-        this.setState({theirAmount: event.target.value});
-    }
-
-    handleChangeMoveDirection(event) {
-        this.setState({moveDirection: event.target.value});
-    }
-
-    onClickAnimalType(event) {
-        console.log(event.target.value);
-
-        // this.setState({animalType: event.target.value});
+    componentDidMount() {
+        // set a wait period and then update the state so that blockly will load for sure
+        setTimeout(function() { this.setState(this.state); }.bind(this), 100);
     }
 
     /**
      * Blockly code! Handles creation of custom blocks and code generation from blocks
      */
     componentDidUpdate() {
+        // Whenever executeCards props update, call the function to execute the cards code generated by Blockly
+        if (this.props.game && this.props.executeCards) {
+            this.executeCards();
+        }
 
+        // Load Blockly
         if (this.props.game && !this.state.blocklyLoaded) {
             console.log('mounted');
 
@@ -705,7 +702,6 @@ class GameHelper extends Component {
                 }
             };
 
-            // TODO: Start here now. write javascript code to interpret the blocks into button pressing?
             // Code generation
             // custom if code generation
             Blockly.JavaScript['controls_if'] = function(block) {
@@ -880,9 +876,10 @@ export default createContainer((props) => {
         let game = Games.findOne({id: props.id});
         let currentPlayer = null;
         let otherPlayer = null;
-        let buttonText = "End Turn";
+        let buttonText = "End Move";
         let message = "";
         let yourTurn = false;
+        let executeCards = false;
 
         // figures out which player is the current player
         if (game != null) {
@@ -894,13 +891,20 @@ export default createContainer((props) => {
                 otherPlayer = game.players[0];
             }
 
-            if (currentPlayer.state.finishedWithTurn) {
+            if (currentPlayer.state.movePhase) {
+                buttonText = "End Move";
+            } else {
+                buttonText = "Play Cards";
+            }
+
+            if (currentPlayer.state.isFinishedWithMove || currentPlayer.state.isFinishedWithCards) {
                 buttonText = "Waiting...";
                 message = "Please wait for other player.";
-            } else if (otherPlayer.state.finishedWithTurn) {
+            } else if (otherPlayer.state.isFinishedWithMove || otherPlayer.state.isFinishedWithCards) {
                 message = "Your opponent is waiting for you!";
             }
 
+            executeCards = currentPlayer.state.executeCards;
             yourTurn = user.username === game.currentTurn.state.user.username;
         }
 
@@ -912,6 +916,7 @@ export default createContainer((props) => {
             buttonText: buttonText,
             message: message,
             yourTurn: yourTurn,
+            executeCards: executeCards,
         };
     } else {
         return {
@@ -919,8 +924,10 @@ export default createContainer((props) => {
             currentUser: Meteor.user(),
             currentPlayer: null,
             otherPlayer: null,
-            buttonText: "End Turn",
+            buttonText: "End Move",
             message: "",
+            yourTurn: false,
+            executeCards: false,
         };
     }
 }, GameHelper);
