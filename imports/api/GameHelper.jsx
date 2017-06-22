@@ -68,6 +68,7 @@ class GameHelper extends Component {
         this.highlightCurrentBobcat = this.highlightCurrentBobcat.bind(this);
         this.myBobcatsComparison = this.myBobcatsComparison.bind(this);
         this.currentBorderingAnimalIs = this.currentBorderingAnimalIs.bind(this);
+        this.isCurrentUsersTurn = this.isCurrentUsersTurn.bind(this);
     }
 
     /**
@@ -97,8 +98,12 @@ class GameHelper extends Component {
         }.bind(this), 300);
     }
 
+    isCurrentUsersTurn() {
+        return this.props.currentUser.username === this.props.game.currentTurn.state.user.username;
+    }
+
     /**
-     * Ends the current turn for the user
+     * Ends the current turn for the user (whether it be 'End Move' or 'Play Cards')
      * @param event
      */
     handleClickEndTurn(event) {
@@ -106,33 +111,39 @@ class GameHelper extends Component {
 
         let current = this.getCurrentPlayerNumber();
 
-        // randomly reinforce the current turn's units
-        if (this.props.currentUser.username === this.props.game.currentTurn.state.user.username) {
+        // randomly reinforce the current turn's units if it's the end of their turn
+        if (this.isCurrentUsersTurn()) { // TODO: check to make sure it's after an End Move
             this.reinforce();
             Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
         }
 
-        // end the turn if the opponent is finished with their turn
-        if (this.props.otherPlayer.state.finishedWithTurn) {
-            this.props.message = "";
+        // Check to see if it is a move turn or cards turn
+        if (this.props.currentPlayer.state.movePhase) {
+            // end the turn if the opponent is finished with their turn
+            if (this.props.otherPlayer.state.isFinishedWithCards) {
+                this.props.message = "";
 
-            // reset the tile selections
-            this.unhighlightBothPlayers();
+                // reset the tile selections
+                this.unhighlightBothPlayers();
 
-            // transfer hexagon data to other player's state so it shows up on their screen
-            this.copyHexagons();
+                // transfer hexagon data to other player's state so it shows up on their screen
+                this.copyHexagons();
 
-            Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
-            Meteor.call('games.updateHexagons', this.props.id, 1-current, this.props.otherPlayer.state.hexagons);
+                Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
+                Meteor.call('games.updateHexagons', this.props.id, 1 - current, this.props.otherPlayer.state.hexagons);
 
-            console.log('calling changeTurns');
-            Meteor.call('games.changeTurns', this.props.id);
+                console.log('calling changeTurns');
+                Meteor.call('games.changeTurns', this.props.id);
+
+                // TODO:
+            } else {
+                // otherwise, wait for them to finish!!
+                this.props.buttonText = "Waiting...";
+                Meteor.call('games.setFinishedWithMove', true, this.props.id, this.getCurrentPlayerNumber());
+                this.props.message = "Please wait for other player.";
+            }
         } else {
-            // otherwise, wait for them to finish!!
-            console.log('wait!');
-            this.props.buttonText = "Waiting...";
-            Meteor.call('games.setFinishedWithTurn', this.props.id, this.getCurrentPlayerNumber());
-            this.props.message = "Please wait for other player.";
+            
         }
     }
 
@@ -400,7 +411,7 @@ class GameHelper extends Component {
      //   console.log(this.props.currentPlayer.state.hexagons);
 
         // only do an action on the board if it's their turn to
-        if (this.props.currentPlayer.state.canSelectTiles) {
+        if (!this.props.currentPlayer.state.finishedWithTurn) {
             let playerNumber = this.getCurrentPlayerNumber();
 
             // get the new hexIndex of what was just clicked
@@ -786,27 +797,32 @@ class GameHelper extends Component {
                         <block type="bordering_animal"></block>
                     </xml>
 
-                    <GameDisplay
-                        game={this.props.game}
-                        onClick={this.onClick.bind(this)}
-                        boardConfig={this.state.boardConfig}
-                        currentUser={this.props.currentUser}
-                        currentPlayer={this.props.currentPlayer}
-                        otherPlayer={this.props.otherPlayer}
-                        message={this.props.message} />
-
                     <table id="blocklyAreaTable">
                         <tbody>
                             <tr>
-                                <td id="blocklyArea">
+                                <td id="gameArea">
+                                    <div className="row">
+                                        <div className="col-sm-6">
+                                            <GameDisplay
+                                                game={this.props.game}
+                                                onClick={this.onClick.bind(this)}
+                                                boardConfig={this.state.boardConfig}
+                                                currentUser={this.props.currentUser}
+                                                currentPlayer={this.props.currentPlayer}
+                                                otherPlayer={this.props.otherPlayer}
+                                                message={this.props.message} />
+                                            </div>
+
+                                        <div id="blocklyArea" className="col-sm-6">
+                                            <div id="blocklyDiv" style={{height: "480px", width: "500px"}}></div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
 
                     <button type="button" className="btn btn-lg btn-success" onClick={this.onClickCodeGeneration}>Play Cards</button>
-                    <br/>
-                    <div id="blocklyDiv" style={{height: "480px", width: "600px"}}></div>
                     <br/>
 
                 </div>

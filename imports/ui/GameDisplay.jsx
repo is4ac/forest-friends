@@ -31,16 +31,10 @@ class GameDisplay extends Component {
         let config = this.props.boardConfig;
         let game = this.props.game;
         let layout = null;
-        let layout2 = null;
-        let hexagons2 = null;
 
         // create the layout if the database is loaded, and check if it's the currentUser's turn
         if (game != null && this.props.currentUser != null) {
-            layout = new Layout({width: 8, height: 8, flat: true, spacing: 0}, {x: -36, y: -40});
-
-            let hexHelper = new HexHelper();
-            hexagons2 = hexHelper.initialize();
-            layout2 = new Layout({width: 8, height: 8, flat: true, spacing: 0}, {x: -36, y: -200});
+            layout = new Layout({width: 8, height: 8, flat: true, spacing: 0}, {x: -30, y: -40});
         }
 
         return (

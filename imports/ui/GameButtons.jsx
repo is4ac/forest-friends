@@ -32,21 +32,25 @@ class GameButtons extends Component {
                 </div>
 
                 <div className="row">
-                    <div className="col-sm-4">
-                        <button type="button" className="btn btn-lg btn-success" onClick={this.props.handleClickEndTurn}>
-                            {this.props.buttonText}
-                        </button>
+                    <div className="col-sm-2">
                     </div>
-                    <div className="col-sm-4">
+                    <div className="col-sm-2">
                         <button type="button" className="btn btn-lg btn-primary" onClick={this.props.handleClickLobby}>Back to
                             lobby
                         </button>
                     </div>
-                    <div className="col-sm-4">
+                    <div className="col-sm-3">
+                        <button type="button" className="btn btn-lg btn-success" onClick={this.props.handleClickEndTurn}>
+                            {this.props.buttonText}
+                        </button>
+                    </div>
+                    <div className="col-sm-2">
                         <button type="button" className="btn btn-lg btn-danger"
                                 data-record-id="54" data-record-title="Something cool" data-toggle="modal" data-target="#confirm-delete">
                             Delete game
                         </button>
+                    </div>
+                    <div className="col-sm-2">
                     </div>
                 </div>
             </div>

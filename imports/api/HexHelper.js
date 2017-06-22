@@ -283,7 +283,7 @@ class HexHelper {
 
         HexHelper.setHexagon(hexagons, 1, 14, 'owl', 3);
         HexHelper.setHexagon(hexagons, 1, 7, 'skunk', 3);
-        HexHelper.setHexagon(hexagons, 1, 8, 'cat', 10);
+        HexHelper.setHexagon(hexagons, 1, 8, 'cat', 3);
 
         // Player 2 units
         HexHelper.setHexagon(hexagons, 2, 26, 'owl', 3);
