@@ -1,7 +1,8 @@
 # README
 
-[Install Meteor](https://www.meteor.com/install) (version >=1.4.1), and download or clone this repo onto your computer.
-Then from inside the main directory of the project, run:
+1. [Install Meteor](https://www.meteor.com/install) (version >=1.4.1).
+2. Download or clone this repo.
+3. From inside the main directory of the project, run:
 
 `meteor run`
 
