@@ -281,14 +281,14 @@ class HexHelper {
         // Init starting animals for each player
         // Player 1 units
 
-        HexHelper.setHexagon(hexagons, 1, 14, 'owl', 3);
-        HexHelper.setHexagon(hexagons, 1, 7, 'skunk', 3);
-        HexHelper.setHexagon(hexagons, 1, 8, 'cat', 3);
+        HexHelper.setHexagon(hexagons, 1, 15, 'owl', 3);
+        HexHelper.setHexagon(hexagons, 1, 8, 'skunk', 3);
+        HexHelper.setHexagon(hexagons, 1, 9, 'cat', 3);
 
         // Player 2 units
-        HexHelper.setHexagon(hexagons, 2, 26, 'owl', 3);
-        HexHelper.setHexagon(hexagons, 2, 32, 'skunk', 3);
-        HexHelper.setHexagon(hexagons, 2, 31, 'cat', 3);
+        HexHelper.setHexagon(hexagons, 2, 27, 'owl', 3);
+        HexHelper.setHexagon(hexagons, 2, 33, 'skunk', 3);
+        HexHelper.setHexagon(hexagons, 2, 32, 'cat', 3);
 
         /*
         // AI 1 units (ally of P1)

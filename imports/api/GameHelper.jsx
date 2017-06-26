@@ -59,6 +59,7 @@ class GameHelper extends Component {
         this.currentBorderingAnimalIs = this.currentBorderingAnimalIs.bind(this);
         this.isCurrentUsersTurn = this.isCurrentUsersTurn.bind(this);
         this.executeCards = this.executeCards.bind(this);
+        this.getHexagonsFromDatabase = this.getHexagonsFromDatabase.bind(this);
     }
 
     /**
@@ -121,23 +122,13 @@ class GameHelper extends Component {
 
                 // transfer hexagon data to other player's state so it shows up on their screen
                 this.copyHexagons('to');
+                this.updateHexagonsDatabase('other');
 
-                Meteor.call('games.updateHexagons', this.props.id, 1 - current, this.props.otherPlayer.state.hexagons);
-
-                // TODO: execute the code of cards on the otherPlayer
-                // TODO: maybe change a state value in otherPlayer so that that flag activates the code to execute???
+                // execute the code of cards on the otherPlayer
                 Meteor.call('games.setExecuteCards', this.props.id, 1 - current, true);
-
-                Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
-
-                console.log('calling changeTurns');
-                Meteor.call('games.changeTurns', this.props.id);
-
-                this.props.buttonText = "Play Cards";
             } else {
                 // otherwise, wait for them to finish!!
                 this.props.buttonText = "Waiting...";
-                this.props.message = "Please wait for other player.";
             }
         } else {
             // Currently ending the cards phase
@@ -151,22 +142,22 @@ class GameHelper extends Component {
                 this.unhighlightBothPlayers();
 
                 // transfer hexagon data to other player's state so it shows up on their screen
+                //this.getHexagonsFromDatabase('other');
                 this.copyHexagons('from');
+                this.updateHexagonsDatabase('current');
 
                 // execute cards
                 this.executeCards();
-
-                // update the database so it displays on the other player's screen
-                Meteor.call('games.updateHexagons', this.props.id, current, this.props.currentPlayer.state.hexagons);
-                Meteor.call('games.updateHexagons', this.props.id, 1 - current, this.props.otherPlayer.state.hexagons);
-
-                console.log('calling changeTurns');
-                Meteor.call('games.changeTurns', this.props.id);
             } else {
                 // otherwise, wait for them to finish!!
                 this.props.buttonText = "Waiting...";
-                this.props.message = "Please wait for other player.";
             }
+        }
+    }
+
+    getHexagonsFromDatabase(player) {
+        if (player == 'other') {
+            this.props.otherPlayer.state.hexagons = Meteor.call('games.getHexagons', this.props.id, 1 - this.getCurrentPlayerNumber());
         }
     }
 
@@ -205,8 +196,10 @@ class GameHelper extends Component {
     copyHexagons(direction) {
         if (direction == 'to') {
             HexHelper.cloneHexagons(this.props.otherPlayer.state.hexagons, this.props.currentPlayer.state.hexagons);
-        } else {
+        } else if (direction == 'from') {
             HexHelper.cloneHexagons(this.props.currentPlayer.state.hexagons, this.props.otherPlayer.state.hexagons);
+        } else {
+            console.log('copyHexagons() unknown input! - ' + direction);
         }
     }
 
@@ -435,7 +428,7 @@ class GameHelper extends Component {
      //   console.log(this.props.currentPlayer.state.hexagons);
 
         // only do an action on the board if it's their turn to
-        if (!this.props.currentPlayer.state.finishedWithTurn) {
+        if (this.props.currentPlayer.state.movePhase && !this.props.currentPlayer.state.isFinishedWithMove) {
             let playerNumber = this.getCurrentPlayerNumber();
 
             // get the new hexIndex of what was just clicked
@@ -443,7 +436,8 @@ class GameHelper extends Component {
             let selectedHexIndex = this.props.currentPlayer.state.selectedHexIndex;
 
             // change the highlighted hexes if player selects a tile they own
-            if (HexHelper.isHexOwnedBy(hex, playerNumber) && hex.props.text != '1') {
+            if (HexHelper.isHexOwnedBy(hex, playerNumber) && hex.props.text != '1'
+                    && HexHelper.getAnimal(hex) != 'cat') {
                 // reset the highlighted index based on database (in case of reloading)
           //      console.log(this.props.currentPlayer.state.selectedHexIndex);
                 this.selectTile(hexIndex, selectedHexIndex, playerNumber);
@@ -485,9 +479,11 @@ class GameHelper extends Component {
 
     updateHexagonsDatabase(player) {
         if (player == 'other') {
-            Meteor.call('games.updateHexagons', this.props.id, 1-this.getCurrentPlayerNumber(), this.props.currentPlayer.state.hexagons);
+            Meteor.call('games.updateHexagons', this.props.id, 1-this.getCurrentPlayerNumber(), this.props.otherPlayer.state.hexagons);
         } else if (player == 'current') {
             Meteor.call('games.updateHexagons', this.props.id, this.getCurrentPlayerNumber(), this.props.currentPlayer.state.hexagons);
+        } else {
+            console.log('updateHexagonsDatabase() error, unknown parameter: ' + player);
         }
     }
     
@@ -584,6 +580,10 @@ class GameHelper extends Component {
         // Execute the code from the cards
         console.log('executing cards');
 
+        // change the flag to false so it doesn't executeCards multiple times
+        let current = this.getCurrentPlayerNumber();
+        Meteor.call('games.setExecuteCards', this.props.id, current, false);
+
         // generate the code
         Blockly.JavaScript.addReservedWords('code', 'event');
         var code = Blockly.JavaScript.workspaceToCode(this.state.workspace);
@@ -594,30 +594,34 @@ class GameHelper extends Component {
         // execute the code, display an error pop up if there is an error
         try {
             // loop through each bobcat index I own, and run the generated code once for each bobcat tile
-            for (let i = 0; i < bobcatIndices.length; i++) {
+            var j = 0; // this value is needed to make the iterator value match up to the setTimeout functions
+            for (var i = 0; i < bobcatIndices.length; i++) {
                 setTimeout( function() {
                     this.setState({codeRunning: true});
 
-                    console.log('calling on: ' + bobcatIndices[i]);
-                    this.setState({currentBobcatIndex: bobcatIndices[i]});
+                    console.log(j);
+                    console.log('calling on: ' + bobcatIndices[j]);
+                    this.setState({currentBobcatIndex: bobcatIndices[j]});
                     this.highlightCurrentBobcat();
                     this.evalInContext(code, {context: this});
 
                     this.setState({codeRunning: false});
+                    j++;
                 }.bind(this), i*500);
             }
 
+            // make sure to update the hexagons in the database
+            setTimeout( function() {
+                this.updateHexagonsDatabase('current');
+                this.copyHexagons('to');
+                this.updateHexagonsDatabase('other');
+
+                console.log('calling changeTurns');
+                Meteor.call('games.changeTurns', this.props.id);
+            }.bind(this), i*500);
         } catch (e) {
             alert(e);
         }
-
-        // make sure to update the hexagons in the database
-        this.updateHexagonsDatabase('current');
-        this.copyHexagons('to');
-        this.updateHexagonsDatabase('other');
-
-        let current = this.getCurrentPlayerNumber();
-        Meteor.call('games.setExecuteCards', this.props.id, current, false);
     }
 
     componentDidMount() {
@@ -629,6 +633,8 @@ class GameHelper extends Component {
      * Blockly code! Handles creation of custom blocks and code generation from blocks
      */
     componentDidUpdate() {
+        console.log('component updated');
+
         // Whenever executeCards props update, call the function to execute the cards code generated by Blockly
         if (this.props.game && this.props.executeCards) {
             this.executeCards();
@@ -762,10 +768,6 @@ class GameHelper extends Component {
                 var dropdown_animal = block.getFieldValue('ANIMAL');
                 var dropdown_comparison = block.getFieldValue('COMPARISON');
                 var value_number = Blockly.JavaScript.valueToCode(block, 'NUMBER', Blockly.JavaScript.ORDER_ATOMIC);
-
-                console.log(dropdown_animal);
-                console.log(dropdown_comparison);
-                console.log(value_number);
 
                 var code = 'this.context.currentBorderingAnimalIs("' + dropdown_animal + '", "' + dropdown_comparison +
                     '", ' + value_number + ')';

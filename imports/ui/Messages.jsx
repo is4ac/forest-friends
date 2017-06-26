@@ -17,7 +17,7 @@ class Messages extends Component {
                     <div className="col-md-12">
                         <h4>
                             {this.props.otherPlayer.state.user ? 'You are playing against ' + this.props.otherPlayer.state.user.username + '.'
-                                : 'You are currently waiting for another player to play! Please be patient.'}
+                                : 'You are currently waiting for another player to play.'}
                         </h4>
                     </div>
                 </div>
@@ -30,8 +30,8 @@ class Messages extends Component {
                 </div>
                 <div className="row">
                     <div className="col-md-12">
-                    {this.props.turn ? <div>It is currently <b>your</b> turn.</div> :
-                        <div>It is your turn to <b>choose cards.</b></div>}
+                    {this.props.turn ? <div>It is your turn to <b>move</b>.</div> :
+                        <div>It is your turn to <b>choose cards</b>.</div>}
                     </div>
                 </div>
             </div>
