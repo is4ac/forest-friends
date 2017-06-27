@@ -55,19 +55,19 @@ class GameListItem extends Component {
         return (
             <li>
                 <div className="container">
-                    <div className="row">
-                        <div className="col-md-4">Game Name: {this.props.game.name}</div>
+                    <div className="masonary-row row">
+                        <div className="col-md-3">Game Name: {this.props.game.name}</div>
                         <div className="col-md-3">
                             {
                                 owner ?
-                                    <button type="button" className="btn btn-primary" onClick={this.handleClickRejoin}>Rejoin
+                                    <button type="button" className="btn btn-warning" onClick={this.handleClickRejoin}>Rejoin
                                         Game</button> :
                                     <button type="button" className="btn btn-primary" onClick={this.handleClick}>Join
                                     Game</button>
                             }
                         </div>
-                        <div className="col-md-5">Current player(s): {this.props.game.players[0].state.user.username} :
-                            {this.props.game.players[1].state.user ? ' '+this.props.game.players[1].state.user.username : ' [None]'}</div>
+                        <div className="col-md-6"><span style={{textAlign: 'left', wordWrap: 'break-word', whiteSpace: 'normal'}}>Current players: {this.props.game.players[0].state.user.username} :
+                            {this.props.game.players[1].state.user ? ' '+this.props.game.players[1].state.user.username : ' [None]'}</span></div>
                     </div>
                 </div>
             </li>

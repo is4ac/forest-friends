@@ -30,22 +30,31 @@ MainLayout = React.createClass({
     render() {
         return (
             <div className="container">
-                <div className="row">
-                    <center>
-                        <div className="col-sm-12"><h3>Welcome to Forest Friends
-                        {this.props.user ? ', '+this.props.user.username : null}!</h3></div>
-                    </center>
-                </div>
-                <div className="row">
-                    <center>
-                        <div className="col-sm-12">
-                        {this.props.user ?
-                            <button type="button" className="btn btn-primary" onClick={this.handleClickLogout}>Log Out</button> :
-                            <button type="button" className="btn btn-primary" onClick={this.handleClickLogin}>Log In / Sign Up</button>}
+                <nav className="navbar navbar-default">
+                    <div className="container-fluid">
+                        <div className="navbar-header">
+                            <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                                <span className="sr-only">Toggle navigation</span>
+                                <span className="icon-bar"></span>
+                                <span className="icon-bar"></span>
+                                <span className="icon-bar"></span>
+                            </button>
+                            <a className="navbar-brand" href="#">Forest Friends</a>
                         </div>
-                    </center>
-                </div>
-                <br/>
+
+                        <div className="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                            <ul className="nav navbar-nav">
+                                <li>{this.props.user ? 'Hello, ' + this.props.user.username : 'Welcome to Forest Friends'}!</li>
+                            </ul>
+                            <ul className="navbar-right navbar-btn">
+                                {this.props.user ?
+                                    <button type="button" className="btn btn-default" onClick={this.handleClickLogout}>Log Out</button> :
+                                    <button type="button" className="btn btn-default" onClick={this.handleClickLogin}>Log In / Register</button>}
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+
                 <div className="row">
                     <div className="col-md-12">
                         <center>

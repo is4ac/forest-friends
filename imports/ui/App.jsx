@@ -8,56 +8,74 @@ import { Accounts, STATES } from 'meteor/std:accounts-ui';
 
 // App component - represents the whole app
 class App extends Component {
-  constructor(props) {
-    super(props);
+    constructor(props) {
+        super(props);
 
-    this.state = {
-      hexagons: [],
-      layout: {},
-    };
-  }
+        this.state = {
+            hexagons: [],
+            layout: {},
+        };
+    }
 
-  /**
-   * Jump to game lobby page
-   */
-  handleClickLobby(event) {
-    event.preventDefault();
-
-    FlowRouter.go('/lobby');
-  }
-
-  /**
-   * If user is logged in, display the GameDisplay Lobby button
-   * @returns {XML}
+    /**
+     * Jump to login page
+     * @param event
      */
-  render() {
-    return (
-        <div className="container">
-          <div className="row">
-            <div className="col-md-4">
-              {this.props.userId ?
-                  <button type="button" className="btn btn-lg btn-primary" onClick={this.handleClickLobby.bind(this)}>Game Lobby</button> :
-              null}
-            </div>
-          </div>
-        </div>
+    handleClickLogin(event) {
+        event.preventDefault();
 
-    );
-  }
+        FlowRouter.go('/login');
+    }
+
+    /**
+     * Jump to game lobby page
+     */
+    handleClickLobby(event) {
+        event.preventDefault();
+
+        FlowRouter.go('/lobby');
+    }
+
+    /**
+     * If user is logged in, display the GameDisplay Lobby button
+     * @returns {XML}
+     */
+    render() {
+        let loginMessage = (
+            <div className="message">
+                Please <a href="#" onClick={this.handleClickLogin}>log in or register</a> to start playing!
+            </div>
+        );
+
+        return (
+            <div className="container">
+                <div className="row">
+                    <div className="col-md-12">
+                        {this.props.userId ?
+                            <button type="button"
+                                    className="btn btn-lg btn-primary"
+                                    onClick={this.handleClickLobby.bind(this)}>Game Lobby</button> :
+                            loginMessage}
+                    </div>
+                </div>
+            </div>
+
+        );
+    }
 }
 
 App.propTypes = {
-      userId: PropTypes.string,
-      currentUser: PropTypes.object,
-      debugging: PropTypes.number,
+    userId: PropTypes.string,
+    currentUser: PropTypes.object,
+    debugging: PropTypes.number,
 };
 
 export default AppContainer = createContainer(() => {
-      Meteor.subscribe('games');
-      console.log('App: Games count: ' + Games.find().count());
+    Meteor.subscribe('games');
+    console.log('App: Games count: ' + Games.find().count());
 
-      return {
-            currentUser: Meteor.user(),
-            userId: Meteor.userId(),
-      };
+    return {
+        currentUser: Meteor.user(),
+        userId: Meteor.userId(),
+    };
 }, App);

@@ -116,6 +116,7 @@ class GameHelper extends Component {
 
             // reset the message
             this.setState({message: ''});
+            this.tempMessage = '';
 
             // randomly reinforce the current turn's units if it's the end of their turn
             if (this.isCurrentUsersTurn()) {
@@ -379,7 +380,7 @@ class GameHelper extends Component {
         // do an attack! roll for your units
         let armySize = parseInt(currentHex.props.text);
         let roll = this.dice.diceRoll(armySize);
-        this.tempMessage = 'Your attack roll: ' + roll + '\n';
+        this.tempMessage += 'Your attack roll: ' + roll + '\n';
         let sum = roll.reduce(function (a, b) {
             return a + b;
         }, 0);
@@ -406,6 +407,8 @@ class GameHelper extends Component {
             // reduce selectedHex number down to 1
             currentHex.props.text = '1';
         }
+
+        this.tempMessage += '------------\n'
 
         this.setState({message: this.tempMessage});
     }
@@ -534,6 +537,11 @@ class GameHelper extends Component {
                 // attack the currently selected opponent tile
                 // if there is none selected, then pick a random enemy, if any
                 case 'selected':
+                    // validation: make sure currentTarget actually has a selection
+                    if (this.state.currentTarget == -1) {
+                        break;
+                    }
+
                     toHex = this.props.currentPlayer.state.hexagons[this.state.currentTarget];
 
                     // do validation checking
@@ -543,9 +551,13 @@ class GameHelper extends Component {
                     }
                     break;
                 case 'random': // attack whichever adjacent tile is an enemy, if there is one. randomly chosen?
-                    console.log('random attack');
-
                     toIndex = this.chooseRandomTarget();
+
+                    // validate (if toIndex is -1, there is no target available)
+                    if (toIndex == -1) {
+                        break;
+                    }
+
                     toHex = this.props.currentPlayer.state.hexagons[toIndex]
 
                     // validation is done in chooseRandomTarget()
@@ -566,8 +578,45 @@ class GameHelper extends Component {
         }
     }
 
-    chooseRandomTarget() {
+    /**
+     * Randomly shuffles the elements in the array. Code referenced from:
+     * https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+     * @param array to shuffle
+     */
+    shuffle(array) {
+        let currentIndex = array.length, temporaryValue, randomIndex;
 
+        // While there remain elements to shuffle...
+        while (0 !== currentIndex) {
+            // Pick a remaining element...
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex -= 1;
+
+            // And swap it with the current element.
+            temporaryValue = array[currentIndex];
+            array[currentIndex] = array[randomIndex];
+            array[randomIndex] = temporaryValue;
+        }
+    }
+
+    /**
+     * Returns index number of a random enemy tile adjacent to the currentBobcatIndex.
+     * Returns -1 if there is no enemy tile adjacent
+     */
+    chooseRandomTarget() {
+        let adjacents = this.hexHelper.getAllAdjacentHexIndices(this.state.currentBobcatIndex);
+        this.shuffle(adjacents);
+
+        for (let i = 0; i < adjacents.length; i++) {
+            let hex = this.props.currentPlayer.state.hexagons[adjacents[i]];
+
+            // check to see if the hex is an enemy tile
+            if (HexHelper.isHexOwnedBy(hex, 1-this.getCurrentPlayerNumber())) {
+                return adjacents[i];
+            }
+        }
+
+        return -1;
     }
 
     compareNumbers(comparison, lhs, rhs) {
@@ -597,7 +646,6 @@ class GameHelper extends Component {
 
     currentBorderingAnimalIs(animal, comparison, number) {
         let hexes = this.hexHelper.getAllAdjacentHexIndices(this.state.currentBobcatIndex);
-        console.log(hexes);
         let found = false;
 
         for (let i = 0; i < hexes.length; i++) {
@@ -698,7 +746,7 @@ class GameHelper extends Component {
                 init: function() {
                     this.appendDummyInput()
                         .appendField("Attack")
-                        .appendField(new Blockly.FieldDropdown([["that one", "selected"], ["anyone", "random"], ["\u2191", "N"], ["\u2197","NE"], ["\u2196","NW"],
+                        .appendField(new Blockly.FieldDropdown([["that one", "selected"], ["random", "random"], ["\u2191", "N"], ["\u2197","NE"], ["\u2196","NW"],
                             ["\u2193","S"], ["\u2198", "SE"], ["\u2199", "SW"]]), "TARGET");
                     this.setPreviousStatement(true, null);
                     this.setNextStatement(true, null);
@@ -847,8 +895,8 @@ class GameHelper extends Component {
                         <tbody>
                             <tr>
                                 <td id="gameArea">
-                                    <div className="row">
-                                        <div className="col-sm-6">
+                                    <div className="row row-centered">
+                                        <div className="col-lg-6 col-centered">
                                             <GameDisplay
                                                 game={this.props.game}
                                                 onClick={this.onClick.bind(this)}
@@ -856,10 +904,12 @@ class GameHelper extends Component {
                                                 currentUser={this.props.currentUser}
                                                 currentPlayer={this.props.currentPlayer}
                                                 otherPlayer={this.props.otherPlayer} />
-                                            </div>
+                                        </div>
 
-                                        <div id="blocklyArea" className="col-sm-6">
-                                            <div id="blocklyDiv" style={{height: "480px", width: "600px"}}></div>
+                                        <div id="blocklyArea" className="col-lg-6 col-centered">
+                                            <div className="center-block">
+                                                <div id="blocklyDiv" style={{height: "480px", width: "600px"}}></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </td>

@@ -17,7 +17,7 @@ class Messages extends Component {
         if (this.props.otherPlayer.state.user) {
             playerMessage =
                 (<div>
-                    <span className={playerColor}>{player}</span>: You are playing against {this.props.otherPlayer.state.user.username}.
+                    You are <span className={playerColor}>{player}</span> playing against {this.props.otherPlayer.state.user.username}.
                 </div>);
         }
 
@@ -37,8 +37,8 @@ class Messages extends Component {
                 </div>
                 <div className="row">
                     <div className="col-md-12 message">
-                    {this.props.turn ? <div>It is your turn to <b>move</b>.</div> :
-                        <div>It is your turn to <b>choose cards</b>.</div>}
+                    {this.props.turn ? <div>It is your turn to <b>move</b> animals on the map.</div> :
+                        <div>It is your turn to <b>choose cards</b> (Blockly code).</div>}
                     </div>
                 </div>
                 <div className="row">

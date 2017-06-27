@@ -1,4 +1,33 @@
-/* CSS declarations go here */
+.masonary-row.row {
+  -webkit-column-gap: 30px;
+  -moz-column-gap: 30px;
+  column-gap: 30px;
+  padding-left: 15px;
+  padding-right: 15px;
+  word-wrap: break-word;
+  font-size: 1em;
+}
+.masonary-row [class*="col-"] {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+  float: none;
+  padding: 0px;
+}
+@media (min-width: 480px) {
+  .masonary-row.row {
+    -webkit-column-count: 2;
+    -moz-column-count: 2;
+    column-count: 2;
+  }
+}
+@media (min-width: 768px) {
+  .masonary-row.row {
+    -webkit-column-count: 3;
+    -moz-column-count: 3;
+    column-count: 3;
+  }
+}
 
 #login-buttons {
   display: block;
@@ -6,6 +35,9 @@
 
 html {
   height: 100%;
+  font-size: 100%;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -106,4 +138,17 @@ svg g text {
 .red {
   color: #8c0000;
   font-weight: bold;
+}
+
+/* centered columns styles */
+.row-centered {
+  text-align:center;
+}
+.col-centered {
+  display:inline-block;
+  float:none;
+  /* reset the text-align */
+  text-align:left;
+  /* inline-block space fix */
+  margin-right:-4px;
 }
