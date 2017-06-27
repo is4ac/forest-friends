@@ -2,7 +2,7 @@
 
 ## Web Demo
 
-Visit [forestfriends.meteorapp.com](forestfriends.meteorapp.com) for a web app demo.
+Visit [forestfriends.meteorapp.com](https://forestfriends.meteorapp.com) for a web app demo.
 
 ## Local Install
 
