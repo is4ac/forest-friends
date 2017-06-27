@@ -1,5 +1,11 @@
 # README
 
+## Web Demo
+
+Visit [forestfriends.meteorapp.com](forestfriends.meteorapp.com) for a web app demo.
+
+## Local Install
+
 1. [Install Meteor](https://www.meteor.com/install) (version >=1.4.1).
 2. Download or clone this repo.
 3. From inside the main directory of the project, run:
