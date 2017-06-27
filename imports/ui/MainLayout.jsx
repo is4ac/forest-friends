@@ -39,12 +39,12 @@ MainLayout = React.createClass({
                                 <span className="icon-bar"></span>
                                 <span className="icon-bar"></span>
                             </button>
-                            <a className="navbar-brand" href="#">Forest Friends</a>
+                            <a className="navbar-brand" href="/">Forest Friends</a>
                         </div>
 
                         <div className="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                            <ul className="nav navbar-nav">
-                                <li>{this.props.user ? 'Hello, ' + this.props.user.username : 'Welcome to Forest Friends'}!</li>
+                            <ul className="navbar-left">
+                                <div className="navbar-center">{this.props.user ? 'Hello, ' + this.props.user.username : 'Welcome to Forest Friends'}!</div>
                             </ul>
                             <ul className="navbar-right navbar-btn">
                                 {this.props.user ?

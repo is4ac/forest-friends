@@ -1,6 +1,6 @@
 {
   "name": "forest-friends",
-  "private": true,
+  "version": "1.0.0",
   "scripts": {
     "start": "meteor run",
     "production": "DEPLOY_HOSTNAME=us-east-1.galaxy-deploy.meteor.com meteor deploy forestfriends.meteorapp.com --owner isung --settings settings-production.json"
