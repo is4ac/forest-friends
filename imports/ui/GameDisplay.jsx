@@ -34,7 +34,7 @@ class GameDisplay extends Component {
 
         // create the layout if the database is loaded, and check if it's the currentUser's turn
         if (game != null && this.props.currentUser != null) {
-            layout = new Layout({width: 8, height: 8, flat: true, spacing: 0}, {x: -30, y: -40});
+            layout = new Layout({width: 8, height: 8, flat: true, spacing: 0}, {x: -35, y: -40});
         }
 
         return (

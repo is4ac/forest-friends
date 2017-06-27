@@ -91,7 +91,7 @@
 
         return _react2.default.createElement(
           "text",
-          { x: "0", y: "-0.7em", textAnchor: "middle" },
+          { x: "0", y: "-0.5em", textAnchor: "middle" },
           text
         );
       }

@@ -128,9 +128,6 @@ class GameHelper extends Component {
             if (this.props.otherPlayer.state.isFinishedWithCards) {
                 this.props.waitMessage = "";
 
-                // reset the tile selections
-                this.unhighlightBothPlayers();
-
                 // transfer hexagon data to other player's state so it shows up on their screen
                 this.copyHexagons('to');
                 this.updateHexagonsDatabase('other');
@@ -149,9 +146,6 @@ class GameHelper extends Component {
             if (this.props.otherPlayer.state.isFinishedWithMove) {
                 this.props.waitMessage = "";
 
-                // reset the tile selections
-                this.unhighlightBothPlayers();
-
                 // transfer hexagon data to other player's state so it shows up on their screen
                 //this.getHexagonsFromDatabase('other');
                 this.copyHexagons('from');
@@ -164,6 +158,10 @@ class GameHelper extends Component {
                 this.props.buttonText = "Waiting...";
             }
         }
+
+        // reset the tile selections
+        this.unhighlightBothPlayers();
+        this.updateHexagonsDatabase('current');
     }
 
     getHexagonsFromDatabase(player) {
@@ -908,7 +906,7 @@ class GameHelper extends Component {
 
                                         <div id="blocklyArea" className="col-lg-6 col-centered">
                                             <div className="center-block">
-                                                <div id="blocklyDiv" style={{height: "480px", width: "600px"}}></div>
+                                                <div id="blocklyDiv" style={{height: "480px", width: "620px"}}></div>
                                             </div>
                                         </div>
                                     </div>

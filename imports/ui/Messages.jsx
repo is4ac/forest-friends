@@ -39,6 +39,7 @@ class Messages extends Component {
                     <div className="col-md-12 message">
                     {this.props.turn ? <div>It is your turn to <b>move</b> animals on the map.</div> :
                         <div>It is your turn to <b>choose cards</b> (Blockly code).</div>}
+                        Bobcats (in the hats) can only be controlled through the code cards.
                     </div>
                 </div>
                 <div className="row">

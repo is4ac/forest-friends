@@ -117,12 +117,22 @@ svg g {
 
 svg g text {
   font-size: 0.3em;
-  fill: #000000;
+  fill: #27ae60;
+  text-shadow:
+          -1px -1px 0 #ecf0f1,
+          1px -1px 0 #ecf0f1,
+          -1px 1px 0 #ecf0f1,
+          1px 1px 0 #ecf0f1;
   fill-opacity: 1;
 }
 
 #blocklyArea {
   height: 99%;
+  text-shadow: 0px 0px 0 #FFF !important;
+}
+
+#blocklyArea svg g text {
+  text-shadow: 0px 0px 0 #FFF !important;
 }
 
 #blocklyAreaTable {

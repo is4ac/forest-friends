@@ -74,13 +74,29 @@ class NewGame extends Component {
     render() {
         return (
             <div className="container">
-                <form>
-                    <div className="form-group">
-                        <input type="text" value={this.state.value} onChange={this.handleChange} placeholder="Game Name" className="form-control"/>
-                        <button type="button" className="btn btn-success" onClick={this.handleSubmit}>Create Game</button>
-                        <button type="button" className="btn btn-danger" onClick={this.handleClickCancel}>Cancel</button>
-                    </div>
-                </form>
+
+                        <form>
+                            <div className="form-group">
+                                <div className="row row-centered">
+                                    <div className="col-sm-4 col-centered">
+                                        <input type="text" value={this.state.value} onChange={this.handleChange} placeholder="Game Name" className="form-control"/>
+                                    </div>
+                                </div>
+                                <div className="row row-centered">
+                                    <div className="col-sm-2 col-centered">
+                                        <center>
+                                            <button type="button" className="btn btn-success" onClick={this.handleSubmit}>Create Game</button>
+                                        </center>
+                                    </div>
+                                    <div className="col-sm-2 col-centered">
+                                        <center>
+                                            <button type="button" className="btn btn-danger" onClick={this.handleClickCancel}>Cancel</button>
+                                        </center>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+
             </div>
         );
     }
