@@ -11,27 +11,39 @@ class Messages extends Component {
     }
 
     render() {
+        let player = this.props.player == 0 ? "Player Blue" : "Player Red";
+        let playerColor = this.props.player == 0 ? "blue" : "red";
+        let playerMessage = 'You are currently waiting for another player to play.';
+        if (this.props.otherPlayer.state.user) {
+            playerMessage =
+                (<div>
+                    <span className={playerColor}>{player}</span>: You are playing against {this.props.otherPlayer.state.user.username}.
+                </div>);
+        }
+
         return (
             <div>
                 <div className="row">
-                    <div className="col-md-12">
-                        <h4>
-                            {this.props.otherPlayer.state.user ? 'You are playing against ' + this.props.otherPlayer.state.user.username + '.'
-                                : 'You are currently waiting for another player to play.'}
-                        </h4>
+                    <div className="col-md-12 message">
+                            {playerMessage}
                     </div>
                 </div>
                 <div className="row">
                     <div className="col-md-12">
-                        <div className="message">
-                            {this.props.message}
+                        <div className="waitMessage">
+                            {this.props.waitMessage}
                         </div>
                     </div>
                 </div>
                 <div className="row">
-                    <div className="col-md-12">
+                    <div className="col-md-12 message">
                     {this.props.turn ? <div>It is your turn to <b>move</b>.</div> :
                         <div>It is your turn to <b>choose cards</b>.</div>}
+                    </div>
+                </div>
+                <div className="row">
+                    <div className="col-md-12 message">
+                        {this.props.message}
                     </div>
                 </div>
             </div>

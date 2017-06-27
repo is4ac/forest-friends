@@ -22,6 +22,8 @@ class GameHelper extends Component {
             workspace: null,
             codeRunning: false,
             currentBobcatIndex: -1, // used during generated code evals
+            currentTarget: -1,
+            message: '',
             boardConfig: {
                             width: 500,
                             height: 500,
@@ -31,6 +33,8 @@ class GameHelper extends Component {
 
         // helper class for hex tile calculations/actions
         this.hexHelper = new HexHelper();
+        this.dice = new Dice();
+        this.tempMessage = '';
 
         // all the function bindings so they can access props and state
         this.onMouseEnter = this.onMouseEnter.bind(this);
@@ -60,6 +64,9 @@ class GameHelper extends Component {
         this.isCurrentUsersTurn = this.isCurrentUsersTurn.bind(this);
         this.executeCards = this.executeCards.bind(this);
         this.getHexagonsFromDatabase = this.getHexagonsFromDatabase.bind(this);
+        this.attackWithCurrentBobcat = this.attackWithCurrentBobcat.bind(this);
+        this.compareAdvantage = this.compareAdvantage.bind(this);
+        this.chooseRandomTarget = this.chooseRandomTarget.bind(this);
     }
 
     /**
@@ -107,6 +114,9 @@ class GameHelper extends Component {
             // Ending the move phase
             Meteor.call('games.setFinishedWithMove', this.props.id, this.getCurrentPlayerNumber(), true);
 
+            // reset the message
+            this.setState({message: ''});
+
             // randomly reinforce the current turn's units if it's the end of their turn
             if (this.isCurrentUsersTurn()) {
                 this.reinforce();
@@ -115,7 +125,7 @@ class GameHelper extends Component {
 
             // end the turn if the opponent is finished with their phase
             if (this.props.otherPlayer.state.isFinishedWithCards) {
-                this.props.message = "";
+                this.props.waitMessage = "";
 
                 // reset the tile selections
                 this.unhighlightBothPlayers();
@@ -136,7 +146,7 @@ class GameHelper extends Component {
 
             // end the turn if the opponent is finished with their phase
             if (this.props.otherPlayer.state.isFinishedWithMove) {
-                this.props.message = "";
+                this.props.waitMessage = "";
 
                 // reset the tile selections
                 this.unhighlightBothPlayers();
@@ -335,19 +345,23 @@ class GameHelper extends Component {
         let yourAnimal = HexHelper.getAnimal(yourHex);
         let theirAnimal = HexHelper.getAnimal(theirHex);
 
-        // TODO: need to balance the advantage bonus to see if *2 is too much. maybe *1.5?
+        // TODO: need to balance the advantage bonus. Make it scale based on number of units?
         if ((yourAnimal === 'owl' && theirAnimal === 'skunk') ||
             (yourAnimal === 'skunk' && theirAnimal === 'cat') ||
             (yourAnimal === 'cat' && theirAnimal === 'owl')) {
             // you have the advantage!
-            console.log('you get a 2x bonus! :)');
-            return (yourSum * 2) > theirSum;
+            console.log('advantage');
+            let advantageRoll = this.dice.diceRoll(2);
+            this.tempMessage += 'You have advantage! gain an extra 2 dice to roll :) - add ' + advantageRoll + '\n';
+            return (yourSum + advantageRoll.reduce(function(acc, val) { return acc + val; }, 0)) > theirSum;
         } else if ((yourAnimal === 'skunk' && theirAnimal === 'owl') ||
                     (yourAnimal === 'cat' && theirAnimal === 'skunk') ||
                     (yourAnimal === 'owl' && theirAnimal === 'cat')) {
             // you have the disadvantage!
-            console.log('they get a 2x bonus... :(');
-            return yourSum > (theirSum * 2);
+            console.log('disadvantage');
+            let advantageRoll = this.dice.diceRoll(2);
+            this.tempMessage += 'They get an advantage roll... :( - added ' + advantageRoll +'\n';
+            return yourSum > (theirSum + advantageRoll.reduce(function(acc, val) { return acc + val; }, 0));
         } else {
             // both are the same, no advantages
             console.log('no bonuses');
@@ -359,24 +373,21 @@ class GameHelper extends Component {
      * Attack an adjacent tile
      */
     attack(myIndex, opponentIndex) {
-        // create a Dice object
-        let dice = new Dice();
-
         let currentHex = this.props.currentPlayer.state.hexagons[myIndex];
         let opponentHex = this.props.currentPlayer.state.hexagons[opponentIndex];
 
         // do an attack! roll for your units
         let armySize = parseInt(currentHex.props.text);
-        let roll = dice.diceRoll(armySize);
-        console.log('your attack roll:', roll);
+        let roll = this.dice.diceRoll(armySize);
+        this.tempMessage = 'Your attack roll: ' + roll + '\n';
         let sum = roll.reduce(function (a, b) {
             return a + b;
         }, 0);
 
         // get attack roll of opponent
         let opponentArmySize = parseInt(opponentHex.props.text);
-        let opponentRoll = dice.diceRoll(opponentArmySize);
-        console.log('their attack roll:', opponentRoll);
+        let opponentRoll = this.dice.diceRoll(opponentArmySize);
+        this.tempMessage += 'Their defense roll: ' + opponentRoll +'\n';
         let opponentSum = opponentRoll.reduce(function (a, b) {
             return a + b;
         }, 0);
@@ -386,15 +397,17 @@ class GameHelper extends Component {
         // for now, just compare the sums and do it all-or-nothing style
         if (this.compareAdvantage(sum, opponentSum, currentHex, opponentHex)) {
             // currentPlayer wins the attack!
-            console.log("Attack successful! Moving units..");
+            this.tempMessage += "Attack successful! Moving units..\n";
             this.moveUnits(myIndex, opponentIndex, armySize - 1);
         } else {
             // TODO: in future versions failed attacks might only cause losses based on how many dice rolled smaller numbers compared to the opponent
-            console.log("Attack failed...");
+            this.tempMessage += "Attack failed...\n";
             // opponent defends successfully!
             // reduce selectedHex number down to 1
             currentHex.props.text = '1';
         }
+
+        this.setState({message: this.tempMessage});
     }
 
     /**
@@ -511,25 +524,75 @@ class GameHelper extends Component {
         return -1;
     }
 
-    myBobcatsComparison(comparison, number) {
-        let myBobcats = this.hexHelper.getNumber(this.props.currentPlayer.state.hexagons[this.state.currentBobcatIndex]);
+    attackWithCurrentBobcat(target) {
+        let currentHex = this.props.currentPlayer.state.hexagons[this.state.currentBobcatIndex];
+        let toHex = null;
+        let toIndex = -1;
 
+        if (this.hexHelper.getNumber(currentHex) > 1) {
+            switch (target) {
+                // attack the currently selected opponent tile
+                // if there is none selected, then pick a random enemy, if any
+                case 'selected':
+                    toHex = this.props.currentPlayer.state.hexagons[this.state.currentTarget];
+
+                    // do validation checking
+                    if (HexHelper.isHexOwnedBy(toHex, 1 - this.getCurrentPlayerNumber())) {
+                        this.attack(this.state.currentBobcatIndex, this.state.currentTarget);
+                        this.updateHexagonsDatabase('current');
+                    }
+                    break;
+                case 'random': // attack whichever adjacent tile is an enemy, if there is one. randomly chosen?
+                    console.log('random attack');
+
+                    toIndex = this.chooseRandomTarget();
+                    toHex = this.props.currentPlayer.state.hexagons[toIndex]
+
+                    // validation is done in chooseRandomTarget()
+                    this.attack(this.state.currentBobcatIndex, toIndex);
+                    this.updateHexagonsDatabase('current');
+
+                    break;
+                default: // target is a direction, like N, S, SW, etc
+                    toIndex = this.hexHelper.getAdjacentHexIndex(this.state.currentBobcatIndex, target);
+                    toHex = this.props.currentPlayer.state.hexagons[toIndex];
+
+                    // do validation checking
+                    if (HexHelper.isHexOwnedBy(toHex, 1 - this.getCurrentPlayerNumber())) {
+                        this.attack(this.state.currentBobcatIndex, toIndex);
+                        this.updateHexagonsDatabase('current');
+                    }
+            }
+        }
+    }
+
+    chooseRandomTarget() {
+
+    }
+
+    compareNumbers(comparison, lhs, rhs) {
         switch(comparison) {
             case '=':
-                return myBobcats == number;
+                return lhs == rhs;
             case '!=':
-                return myBobcats != number;
+                return lhs != rhs;
             case '<':
-                return myBobcats < number;
+                return lhs < rhs;
             case '<=':
-                return myBobcats <= number;
+                return lhs <= rhs;
             case '>':
-                return myBobcats > number;
+                return lhs > rhs;
             case '>=':
-                return myBobcats >= number;
+                return lhs >= rhs;
         }
 
         return false;
+    }
+
+    myBobcatsComparison(comparison, number) {
+        let myBobcats = this.hexHelper.getNumber(this.props.currentPlayer.state.hexagons[this.state.currentBobcatIndex]);
+
+        return this.compareNumbers(comparison, myBobcats, number);
     }
 
     currentBorderingAnimalIs(animal, comparison, number) {
@@ -542,28 +605,13 @@ class GameHelper extends Component {
 
             // check to see if each tile is an animal type that matches
             if (HexHelper.getAnimal(hex) == animal) {
-
-                console.log('found a skunk');
-
-                // get the number TODO: need to get the static functions to all line up
+                // get the number TODO: need to change hexHelper functions to static
                 let theirNum = this.hexHelper.getNumber(hex);
 
-                switch (comparison) {
-                    case '=':
-                        found = theirNum == number;
-                    case '!=':
-                        found = theirNum != number;
-                    case '<':
-                        found = theirNum < number;
-                    case '<=':
-                        found = theirNum <= number;
-                    case '>':
-                        found = theirNum > number;
-                    case '>=':
-                        found = theirNum >= number;
-                }
+                found = this.compareNumbers(comparison, theirNum, number);
 
                 if (found) {
+                    this.setState({currentTarget: hexes[i]});
                     return found;
                 }
             }
@@ -633,8 +681,6 @@ class GameHelper extends Component {
      * Blockly code! Handles creation of custom blocks and code generation from blocks
      */
     componentDidUpdate() {
-        console.log('component updated');
-
         // Whenever executeCards props update, call the function to execute the cards code generated by Blockly
         if (this.props.game && this.props.executeCards) {
             this.executeCards();
@@ -642,8 +688,6 @@ class GameHelper extends Component {
 
         // Load Blockly
         if (this.props.game && !this.state.blocklyLoaded) {
-            console.log('mounted');
-
             var blocklyArea = document.getElementById('blocklyArea');
             var blocklyDiv = document.getElementById('blocklyDiv');
 
@@ -653,7 +697,9 @@ class GameHelper extends Component {
             Blockly.Blocks['attack'] = {
                 init: function() {
                     this.appendDummyInput()
-                        .appendField("Attack");
+                        .appendField("Attack")
+                        .appendField(new Blockly.FieldDropdown([["that one", "selected"], ["anyone", "random"], ["\u2191", "N"], ["\u2197","NE"], ["\u2196","NW"],
+                            ["\u2193","S"], ["\u2198", "SE"], ["\u2199", "SW"]]), "TARGET");
                     this.setPreviousStatement(true, null);
                     this.setNextStatement(true, null);
                     this.setColour(0);
@@ -680,7 +726,7 @@ class GameHelper extends Component {
             Blockly.Blocks['my_bobcats'] = {
                 init: function() {
                     this.appendDummyInput()
-                        .appendField("my bobcats")
+                        .appendField("# of my bobcats")
                         .appendField(new Blockly.FieldDropdown([["=","="], ["\u2260","!="], ["<","<"], ["\u2264","<="], [">",">"], ["\u2265",">="]]), "COMPARISON");
                     this.appendValueInput("NUMBER")
                         .setCheck("Number");
@@ -695,7 +741,7 @@ class GameHelper extends Component {
             Blockly.Blocks['bordering_animal'] = {
                 init: function() {
                     this.appendDummyInput()
-                        .appendField("other")
+                        .appendField("# of other")
                         .appendField(new Blockly.FieldDropdown([["owls","owl"], ["skunks","skunk"], ["bobcats","cat"]]), "ANIMAL")
                         .appendField(new Blockly.FieldDropdown([["=","="], ["\u2260","!="], ["<","<"], ["\u2264","<="], [">",">"], ["\u2265",">="]]), "COMPARISON");
                     this.appendValueInput("NUMBER")
@@ -734,8 +780,10 @@ class GameHelper extends Component {
             Blockly.JavaScript['controls_ifelse'] = Blockly.JavaScript['controls_if'];
 
             Blockly.JavaScript['attack'] = function(block) {
-                // must have timeout function to match the pause in move code generation
-                var code = '\n';
+                var dropdown_target = block.getFieldValue('TARGET');
+
+                var code = 'this.context.attackWithCurrentBobcat("' + dropdown_target + '");\n';
+                code += 'this.context.setState({currentTarget: -1});\n'; // reset the target after each attack
 
                 return code;
             }.bind(this);
@@ -745,13 +793,13 @@ class GameHelper extends Component {
 
                 var code = 'if (true) {\n';
                 code += 'let newIndex = this.context.moveCurrentBobcat("' + dropdown_direction + '");\n';
+                // newIndex is used for cases where the 'move' action is used in succession: so a tile can be moved
+                // more than once using multiple 'move' cards
                 code += 'if (newIndex >= 0) {\n';
                 code += 'this.context.setState({currentBobcatIndex: newIndex});\n';
                 code += '}\n';
                 code += '}\n';
 
-                // wait for event to trigger completely
-                //code += 'setTimeout(function() { document.getElementById("moveButton").click(); }, 100);\n';
                 return code;
             }.bind(this);
 
@@ -807,22 +855,17 @@ class GameHelper extends Component {
                                                 boardConfig={this.state.boardConfig}
                                                 currentUser={this.props.currentUser}
                                                 currentPlayer={this.props.currentPlayer}
-                                                otherPlayer={this.props.otherPlayer}
-                                                message={this.props.message} />
+                                                otherPlayer={this.props.otherPlayer} />
                                             </div>
 
                                         <div id="blocklyArea" className="col-sm-6">
-                                            <div id="blocklyDiv" style={{height: "480px", width: "500px"}}></div>
+                                            <div id="blocklyDiv" style={{height: "480px", width: "600px"}}></div>
                                         </div>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-
-                    <button type="button" className="btn btn-lg btn-success" onClick={this.onClickCodeGeneration}>Play Cards</button>
-                    <br/>
-
                 </div>
             );
         }
@@ -841,9 +884,11 @@ class GameHelper extends Component {
                 <center>
                     { this.props.game ?
                         <Messages
-                            message={this.props.message}
+                            waitMessage={this.props.waitMessage}
+                            message={this.state.message}
                             otherPlayer={this.props.otherPlayer}
                             turn={this.props.yourTurn}
+                            player={this.getCurrentPlayerNumber()}
                         />
                         : null
                     }
@@ -868,7 +913,7 @@ GameHelper.propTypes = {
     currentPlayer: PropTypes.object, // the current user's Player object
     otherPlayer: PropTypes.object, // the opponent Player object
     buttonText: PropTypes.string, // the string for the End Turn button
-    message: PropTypes.string, // message that goes on the top of the screen
+    waitMessage: PropTypes.string, // message that goes on the top of the screen
     yourTurn: PropTypes.bool,
 };
 
@@ -879,7 +924,7 @@ export default createContainer((props) => {
         let currentPlayer = null;
         let otherPlayer = null;
         let buttonText = "End Move";
-        let message = "";
+        let waitMessage = "";
         let yourTurn = false;
         let executeCards = false;
 
@@ -901,9 +946,9 @@ export default createContainer((props) => {
 
             if (currentPlayer.state.isFinishedWithMove || currentPlayer.state.isFinishedWithCards) {
                 buttonText = "Waiting...";
-                message = "Please wait for other player.";
+                waitMessage = "Please wait for other player.";
             } else if (otherPlayer.state.isFinishedWithMove || otherPlayer.state.isFinishedWithCards) {
-                message = "Your opponent is waiting for you!";
+                waitMessage = "Your opponent is waiting for you!";
             }
 
             executeCards = currentPlayer.state.executeCards;
@@ -916,7 +961,7 @@ export default createContainer((props) => {
             currentPlayer: currentPlayer,
             otherPlayer: otherPlayer,
             buttonText: buttonText,
-            message: message,
+            waitMessage: waitMessage,
             yourTurn: yourTurn,
             executeCards: executeCards,
         };
@@ -927,7 +972,7 @@ export default createContainer((props) => {
             currentPlayer: null,
             otherPlayer: null,
             buttonText: "End Move",
-            message: "",
+            waitMessage: "",
             yourTurn: false,
             executeCards: false,
         };

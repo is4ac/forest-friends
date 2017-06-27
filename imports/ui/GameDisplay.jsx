@@ -70,7 +70,6 @@ GameDisplay.propTypes = {
     currentPlayer: PropTypes.object, // the current user's Player object
     otherPlayer: PropTypes.object, // the opponent Player object
     buttonText: PropTypes.string, // the string for the End Turn button
-    message: PropTypes.string, // message that goes on the top of the screen
 };
 
 export default createContainer((props) => {
