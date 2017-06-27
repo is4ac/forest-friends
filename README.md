@@ -30,4 +30,4 @@ While the other player is doing their move phase, you get to select which cards 
 
 ## Research
 
-This game is being used as part of on-going research at UW-Madison studying game-exhibits and computational literacy. Visit the [Complex Play Lab website](http://complexplay.org/) for more info.
+This game is being used as part of an on-going research project at UW-Madison studying game-exhibits and computational literacy. Visit the [Complex Play Lab website](http://complexplay.org/) for more info.
