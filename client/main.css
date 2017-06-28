@@ -112,6 +112,20 @@
   }
 }
 
+.btn-success {
+  background: #27ae60;
+  color: #ffffff;
+}
+
+.btn-success:hover, .btn-success:focus, .btn-success:active, .btn-success.active, .open > .dropdown-toggle.btn-success {
+  background: #219953;
+}
+
+.btn-success:active, .btn-success.active {
+  background: #1f8e4d;
+  box-shadow: none;
+}
+
 #login-buttons {
   display: block;
 }
